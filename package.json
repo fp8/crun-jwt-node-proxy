@@ -1,0 +1,51 @@
+{
+  "name": "crun-jwt-proxy",
+  "version": "0.1.0",
+  "description": "A JWT parsing proxy for Cloud Run Service to be ran as a sidecar",
+  "author": "marcos.lin@farport.co",
+  "license": "MIT",
+  "engines": {
+    "node": "^22"
+  },
+  "packageManager": "yarn@4.9.2",
+  "scripts": {
+    "build:ts": "nest build --path ./tsconfig.build.json",
+    "build": "yarn lint && yarn build:ts",
+    "lint:format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "lint:ts": "eslint \"{src,test}/**/*.ts\" --fix",
+    "lint": "yarn lint:ts && yarn lint:format",
+    "test:unit": "FP8_ENV=utest jest --config ./jest.config.ts",
+    "test:debug": "FP8_ENV=utest jest --config ./jest.config.ts --runInBand --bail",
+    "test": "yarn test:unit",
+    "start": "ts-node --project tsconfig.json -r tsconfig-paths/register src"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
+    "@eslint/js": "^9.18.0",
+    "@types/http-proxy": "^1.17.16",
+    "@types/jest": "^29.5.14",
+    "@types/jsonwebtoken": "^9",
+    "@types/node": "^22.10.7",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.2",
+    "jest": "^29.7.0",
+    "prettier": "^3.4.2",
+    "ts-jest": "^29.2.5",
+    "ts-loader": "^9.5.2",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0"
+  },
+  "dependencies": {
+    "@fp8/simple-config": "^0.7.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
+    "http-proxy": "^1.18.1",
+    "jlog-facade": "^0.9.1",
+    "jsonwebtoken": "^9.0.2",
+    "jwt-decode": "^4.0.0",
+    "reflect-metadata": "^0.2.2"
+  }
+}
