@@ -1,0 +1,8 @@
+name: typescript-start-utest
+port: 8080
+jwt:
+  filter:
+    email: /test\.com$/
+  mapper:
+    sub: X-AUTH-USERID
+    email: X-AUTH-EMAIL

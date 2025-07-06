@@ -1,0 +1,8 @@
+name: typescript-start-local
+port: 8080
+jwt:
+  filter:
+    email: /farport.co$/
+  mapper:
+    sub: X-AUTH-USERID
+    email: X-AUTH-EMAIL
