@@ -15,3 +15,12 @@ export function loadTextFile(filePath: string): string {
   const fullPath = getDataPath(filePath);
   return fs.readFileSync(fullPath, 'utf-8');
 }
+
+export function loadJsonFile<T>(filePath: string): T {
+  const content = loadTextFile(filePath);
+  try {
+    return JSON.parse(content) as T;
+  } catch (error) {
+    throw new Error(`Failed to parse JSON from ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}

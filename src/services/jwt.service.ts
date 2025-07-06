@@ -1,44 +1,16 @@
 import * as jwt from 'jsonwebtoken';
-import * as https from 'https';
-import * as http from 'http';
-import { URL } from 'url';
 import { IJwtClaim, IJwtValidationOptions } from '../core/interfaces';
 import { createLogger } from '../core/logger';
-import { JwtValidator } from '../dto/jwt.dto';
+import {
+  JwtValidator,
+} from '../jwt/validator';
+import {
+  JwtServiceOptions,
+  OpenIdConfiguration
+} from 'jwt/interfaces';
+import { discoverJwksUri, fetchJwks, rsaJwkToPem } from '../jwt/utils';
 
 const logger = createLogger('JwtService');
-
-interface JwksKey {
-  kty: string;
-  kid: string;
-  use?: string;
-  n?: string;
-  e?: string;
-  x5c?: string[];
-  x5t?: string;
-  alg?: string;
-}
-
-interface JwksResponse {
-  keys: JwksKey[];
-}
-
-interface OpenIdConfiguration {
-  issuer: string;
-  jwks_uri: string;
-  authorization_endpoint?: string;
-  token_endpoint?: string;
-  userinfo_endpoint?: string;
-  // Add other OIDC discovery properties as needed
-}
-
-export interface JwtServiceOptions {
-  issuer: string;
-  audience?: string;
-  clockTolerance?: number;
-  maxCacheAge?: number;
-  validator?: JwtValidator;
-}
 
 export class JwtService {
   private readonly issuer: string;
@@ -84,7 +56,10 @@ export class JwtService {
       }
 
       // Get the public key for validation
-      const publicKey = await this.getPublicKey(keyId);
+      let publicKey = options?.publicKey;
+      if (publicKey === undefined) {
+        publicKey = await this.getPublicKey(keyId);
+      }
 
       // Verify the token
       const verifyOptions: jwt.VerifyOptions = {
@@ -151,11 +126,11 @@ export class JwtService {
 
     // Get JWKS URI if not cached
     if (!this.jwksUri) {
-      await this.discoverJwksUri();
+      this.jwksUri = await discoverJwksUri(this.issuer);
     }
 
     // Fetch JWKS and find the key
-    const jwks = await this.fetchJwks();
+    const jwks = await fetchJwks(this.jwksUri);
     const jwkKey = jwks.keys.find((key) => key.kid === keyId);
 
     if (!jwkKey) {
@@ -163,7 +138,7 @@ export class JwtService {
     }
 
     // Convert JWK to PEM format
-    const publicKey = this.jwkToPem(jwkKey);
+    const publicKey = rsaJwkToPem(jwkKey);
 
     // Cache the key
     this.keyCache.set(keyId, {
@@ -173,238 +148,6 @@ export class JwtService {
 
     logger.debug('Retrieved and cached public key', { keyId });
     return publicKey;
-  }
-
-  /**
-   * Discovers the JWKS URI from the OpenID Connect configuration
-   */
-  private async discoverJwksUri(): Promise<void> {
-    // Check if configuration is cached
-    if (
-      this.configCache &&
-      Date.now() - this.configCache.cachedAt < this.maxCacheAge
-    ) {
-      this.jwksUri = this.configCache.config.jwks_uri;
-      return;
-    }
-
-    const wellKnownUrl = `${this.issuer}/.well-known/openid-configuration`;
-
-    try {
-      const config = await this.fetchJson<OpenIdConfiguration>(wellKnownUrl);
-
-      if (!config.jwks_uri) {
-        throw new Error('JWKS URI not found in OpenID configuration');
-      }
-
-      this.jwksUri = config.jwks_uri;
-      this.configCache = {
-        config,
-        cachedAt: Date.now(),
-      };
-
-      logger.debug('Discovered JWKS URI', {
-        issuer: this.issuer,
-        jwksUri: this.jwksUri,
-      });
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      logger.error('Failed to discover JWKS URI', {
-        issuer: this.issuer,
-        error: errorMessage,
-      });
-      throw new Error(`Failed to discover JWKS URI: ${errorMessage}`);
-    }
-  }
-
-  /**
-   * Fetches the JWKS from the JWKS URI
-   */
-  private async fetchJwks(): Promise<JwksResponse> {
-    if (!this.jwksUri) {
-      throw new Error('JWKS URI not available');
-    }
-
-    try {
-      const jwks = await this.fetchJson<JwksResponse>(this.jwksUri);
-      logger.debug('Fetched JWKS successfully', {
-        keyCount: jwks.keys.length,
-        jwksUri: this.jwksUri,
-      });
-      return jwks;
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      logger.error('Failed to fetch JWKS', {
-        jwksUri: this.jwksUri,
-        error: errorMessage,
-      });
-      throw new Error(`Failed to fetch JWKS: ${errorMessage}`);
-    }
-  }
-
-  /**
-   * Converts a JWK to PEM format
-   */
-  private jwkToPem(jwk: JwksKey): string {
-    if (jwk.kty !== 'RSA') {
-      throw new Error(`Unsupported key type: ${jwk.kty}`);
-    }
-
-    if (!jwk.n || !jwk.e) {
-      throw new Error('Invalid RSA key: missing n or e parameters');
-    }
-
-    // Convert base64url to buffer
-    const nBuffer = Buffer.from(jwk.n, 'base64url');
-    const eBuffer = Buffer.from(jwk.e, 'base64url');
-
-    // Create ASN.1 DER encoded public key
-    const publicKeyDer = this.createRsaPublicKeyDer(nBuffer, eBuffer);
-
-    // Convert to PEM format
-    const publicKeyPem = this.derToPem(publicKeyDer, 'PUBLIC KEY');
-
-    return publicKeyPem;
-  }
-
-  /**
-   * Creates RSA public key in DER format
-   */
-  private createRsaPublicKeyDer(n: Buffer, e: Buffer): Buffer {
-    // RSA public key ASN.1 structure
-    const modulusLength = this.encodeLength(n.length);
-    const exponentLength = this.encodeLength(e.length);
-
-    const modulus = Buffer.concat([Buffer.from([0x02]), modulusLength, n]);
-    const exponent = Buffer.concat([Buffer.from([0x02]), exponentLength, e]);
-
-    const rsaPublicKey = Buffer.concat([modulus, exponent]);
-    const rsaPublicKeyLength = this.encodeLength(rsaPublicKey.length);
-
-    const sequence = Buffer.concat([
-      Buffer.from([0x30]),
-      rsaPublicKeyLength,
-      rsaPublicKey,
-    ]);
-
-    // RSA encryption OID
-    const rsaOid = Buffer.from([
-      0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01,
-      0x01, 0x05, 0x00,
-    ]);
-
-    const publicKeyInfo = Buffer.concat([
-      rsaOid,
-      Buffer.from([0x03]),
-      this.encodeLength(sequence.length + 1),
-      Buffer.from([0x00]),
-      sequence,
-    ]);
-
-    const publicKeyInfoLength = this.encodeLength(publicKeyInfo.length);
-
-    return Buffer.concat([
-      Buffer.from([0x30]),
-      publicKeyInfoLength,
-      publicKeyInfo,
-    ]);
-  }
-
-  /**
-   * Encodes length in ASN.1 DER format
-   */
-  private encodeLength(length: number): Buffer {
-    if (length < 0x80) {
-      return Buffer.from([length]);
-    } else if (length < 0x100) {
-      return Buffer.from([0x81, length]);
-    } else if (length < 0x10000) {
-      return Buffer.from([0x82, length >> 8, length & 0xff]);
-    } else if (length < 0x1000000) {
-      return Buffer.from([
-        0x83,
-        length >> 16,
-        (length >> 8) & 0xff,
-        length & 0xff,
-      ]);
-    } else {
-      return Buffer.from([
-        0x84,
-        length >> 24,
-        (length >> 16) & 0xff,
-        (length >> 8) & 0xff,
-        length & 0xff,
-      ]);
-    }
-  }
-
-  /**
-   * Converts DER to PEM format
-   */
-  private derToPem(der: Buffer, type: string): string {
-    const base64 = der.toString('base64');
-    const pem = base64.match(/.{1,64}/g)?.join('\n') || base64;
-    return `-----BEGIN ${type}-----\n${pem}\n-----END ${type}-----\n`;
-  }
-
-  /**
-   * Fetches JSON from a URL
-   */
-  private async fetchJson<T>(url: string): Promise<T> {
-    return new Promise((resolve, reject) => {
-      const parsedUrl = new URL(url);
-      const client = parsedUrl.protocol === 'https:' ? https : http;
-
-      const options = {
-        hostname: parsedUrl.hostname,
-        port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
-        path: parsedUrl.pathname + parsedUrl.search,
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-          'User-Agent': 'crun-jwt-proxy/0.1.0',
-        },
-        timeout: 10000, // 10 seconds timeout
-      };
-
-      const req = client.request(options, (res) => {
-        let data = '';
-
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-
-        res.on('end', () => {
-          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-            try {
-              const parsed = JSON.parse(data);
-              resolve(parsed);
-            } catch (error) {
-              const errorMessage =
-                error instanceof Error ? error.message : String(error);
-              reject(
-                new Error(`Failed to parse JSON response: ${errorMessage}`),
-              );
-            }
-          } else {
-            reject(new Error(`HTTP ${res.statusCode}: ${res.statusMessage}`));
-          }
-        });
-      });
-
-      req.on('error', (error) => {
-        reject(new Error(`Request failed: ${error.message}`));
-      });
-
-      req.on('timeout', () => {
-        req.destroy();
-        reject(new Error('Request timeout'));
-      });
-
-      req.end();
-    });
   }
 
   /**

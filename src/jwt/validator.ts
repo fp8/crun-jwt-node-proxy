@@ -1,9 +1,9 @@
-import type { JwtConfig } from './config.dto';
+import type { JwtConfig } from '../dto/config.dto';
 
 import { isEmpty } from 'jlog-facade';
 import { IJwtClaim, createLogger } from '../core';
 
-const logger = createLogger('JwtValidator');
+const logger = createLogger('jwt.validator');
 
 interface IJwtMatcher {
   field: string;

@@ -11,4 +11,5 @@ export interface IJwtClaim {
 
 export interface IJwtValidationOptions {
   signatureOnly?: boolean;
+  publicKey?: string;
 }

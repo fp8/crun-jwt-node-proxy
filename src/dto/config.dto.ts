@@ -1,7 +1,7 @@
 import { Type } from 'class-transformer';
 import { IsNumber, IsObject, IsString, ValidateNested } from 'class-validator';
 
-import { JwtValidator } from './jwt.dto';
+import { JwtValidator } from '../jwt/validator';
 
 export class JwtConfig {
   @IsObject()
