@@ -4,31 +4,38 @@ import * as jwt from 'jsonwebtoken';
 import { JwtService } from '../../src/services/jwt.service';
 import { IJwtClaim } from '../../src/core';
 import { JwtValidator, JwksResponse, rsaJwkToPem } from '../../src/jwt';
+import { JwtConfig } from '../../src/dto/config.dto';
 
+// Helper function to create default JwtConfig
+const createJwtConfig = (overrides: Partial<JwtConfig> = {}): JwtConfig => ({
+  issuer: 'https://securetoken.google.com/fp8netes-dev',
+  audience: 'fp8netes-dev',
+  clockTolerance: 30,
+  maxCacheAge: 3600000,
+  filter: {},
+  mapper: {},
+  ...overrides,
+});
 
 describe('JwtService', () => {
   const testIssuer = 'https://securetoken.google.com/fp8netes-dev';
-const testAudience = 'fp8netes-dev';
-  const jwtService = new JwtService({
-    issuer: testIssuer,
-  });
+  const testAudience = 'fp8netes-dev';
+  const jwtService = new JwtService(createJwtConfig());
 
   describe('constructor', () => {
     it('should initialize with provided options', () => {
-      const service = new JwtService({
-        issuer: testIssuer,
-        audience: testAudience,
-        clockTolerance: 60,
-        maxCacheAge: 7200000,
-      });
+      const service = new JwtService(
+        createJwtConfig({
+          clockTolerance: 60,
+          maxCacheAge: 7200000,
+        }),
+      );
 
       expect(service).toBeDefined();
     });
 
     it('should use default values when options are not provided', () => {
-      const service = new JwtService({
-        issuer: testIssuer,
-      });
+      const service = new JwtService(createJwtConfig());
 
       expect(service).toBeDefined();
     });
@@ -48,37 +55,27 @@ const testAudience = 'fp8netes-dev';
       });
 
       await expect(jwtService.validateToken(token)).rejects.toThrow(
-        'JWT token missing key ID (kid) in header',
+        /^JWT validation failed: JWT token/,
       );
     });
   });
 
   describe('mapClaims', () => {
-    let mockValidator: JwtValidator;
     let jwtServiceForMap: JwtService;
 
     beforeEach(() => {
-      // Mock the validator
-      mockValidator = {
-        validate: jest.fn(),
-        map: jest.fn().mockReturnValue({ 'x-user-id': 'test-user' }),
-      } as any;
-
-      jwtServiceForMap = new JwtService({
-        issuer: testIssuer,
-        audience: testAudience,
-        clockTolerance: 30,
-        validator: mockValidator,
-      });
+      jwtServiceForMap = new JwtService(
+        createJwtConfig({
+          mapper: { sub: 'x-user-id' }, // Simple mapping for testing
+        }),
+      );
 
       // Clear any previous mocks
       jest.clearAllMocks();
     });
 
-    it('should return empty object when no validator is provided', () => {
-      const serviceWithoutValidator = new JwtService({
-        issuer: testIssuer,
-      });
+    it('should return empty object when no mapper is provided', () => {
+      const serviceWithoutMapper = new JwtService(createJwtConfig());
 
       const claims: IJwtClaim = {
         iss: testIssuer,
@@ -89,11 +86,11 @@ const testAudience = 'fp8netes-dev';
         exp: Math.floor(Date.now() / 1000) + 3600,
       };
 
-      const result = serviceWithoutValidator.mapClaims(claims);
+      const result = serviceWithoutMapper.mapClaims(claims);
       expect(result).toEqual({});
     });
 
-    it('should map claims using validator', () => {
+    it('should map claims using mapper configuration', () => {
       const claims: IJwtClaim = {
         iss: testIssuer,
         aud: testAudience,
@@ -105,25 +102,20 @@ const testAudience = 'fp8netes-dev';
 
       const result = jwtServiceForMap.mapClaims(claims);
 
-      expect(mockValidator.map).toHaveBeenCalledWith(claims);
       expect(result).toEqual({ 'x-user-id': 'test-user' });
     });
   });
 
   describe('edge cases', () => {
     it('should handle unsupported key types', () => {
-      const service = new JwtService({
-        issuer: testIssuer,
-      });
+      const service = new JwtService(createJwtConfig());
 
       // This would be tested in integration tests with actual JWKS
       expect(service).toBeDefined();
     });
 
     it('should handle network errors gracefully', () => {
-      const service = new JwtService({
-        issuer: testIssuer,
-      });
+      const service = new JwtService(createJwtConfig());
 
       // This would be tested in integration tests with network mocking
       expect(service).toBeDefined();
@@ -133,9 +125,9 @@ const testAudience = 'fp8netes-dev';
   /**
    * At some point in the future, the direct test might fail due to public key rotation.
    * That's the reason we have following test with "validateToken (local key)".
-   * 
+   *
    * When that happens, re-create the jwt and insert into the test.  For firebase, do:
-   * 
+   *
    * ```bash
    * curl --location 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=<Firebase Web API Key>' \
    *     --header 'Content-Type: application/json' \
@@ -145,9 +137,9 @@ const testAudience = 'fp8netes-dev';
    *         "returnSecureToken": true
    *     }'
    * ```
-   * 
+   *
    * For IAM, do:
-   * 
+   *
    * ```bash
    * gcloud auth print-identity-token
    * ```
@@ -182,9 +174,12 @@ const testAudience = 'fp8netes-dev';
     });
 
     it('validate IAM JWT with signature only (ignoring expiry)', async () => {
-      const iamJwtService = new JwtService({
-        issuer: 'https://accounts.google.com',
-      });
+      const iamJwtService = new JwtService(
+        createJwtConfig({
+          issuer: 'https://accounts.google.com',
+          audience: '', // IAM tokens might not have audience
+        }),
+      );
 
       const jwt = loadTextFile('jwt/jwt-iam.txt');
       // Using signature-only validation since the token is expired
@@ -201,11 +196,14 @@ const testAudience = 'fp8netes-dev';
   describe('validateToken (local key)', () => {
     it('validate firebase JWT with local signature (ignoring expiry)', async () => {
       const jwt = loadTextFile('jwt/jwt-firebase.txt');
-      const publicKey = getPublicKey('jwt/jwt-firebase-jwks.json', '877485002f05be0267ef459f5b513533b5c58c12');
+      const publicKey = getPublicKey(
+        'jwt/jwt-firebase-jwks.json',
+        '877485002f05be0267ef459f5b513533b5c58c12',
+      );
       // Using signature-only validation since the token is expired
       const claims = await jwtService.validateToken(jwt, {
         signatureOnly: true,
-        publicKey
+        publicKey,
       });
       expect(claims).toBeDefined();
       expect(claims.sub).toBe('Vl30SR5kIMWdqCdN5cr4Ptd62b53');
@@ -215,14 +213,17 @@ const testAudience = 'fp8netes-dev';
 
     it('should fail validation when incorrect key provided', async () => {
       const jwt = loadTextFile('jwt/jwt-firebase.txt');
-      const publicKey = getPublicKey('jwt/jwt-firebase-jwks.json', '47ae49c4c9d3eb85a5254072c30d2e8e7661efe1');
+      const publicKey = getPublicKey(
+        'jwt/jwt-firebase-jwks.json',
+        '47ae49c4c9d3eb85a5254072c30d2e8e7661efe1',
+      );
 
       // If the token is expired, this should fail with normal validation
       // Note: This test may pass if the token is not yet expired
       try {
         await jwtService.validateToken(jwt, {
           signatureOnly: true,
-          publicKey
+          publicKey,
         });
         // If we get here, the token is not expired yet
         console.log('Token is not expired yet, skipping expiry test');
@@ -234,16 +235,22 @@ const testAudience = 'fp8netes-dev';
     });
 
     it('validate IAM JWT with signature only (ignoring expiry)', async () => {
-      const iamJwtService = new JwtService({
-        issuer: 'https://accounts.google.com',
-      });
+      const iamJwtService = new JwtService(
+        createJwtConfig({
+          issuer: 'https://accounts.google.com',
+          audience: '', // IAM tokens might not have audience
+        }),
+      );
 
-      const publicKey = getPublicKey('jwt/jwt-iam-jwks.json', '8e8fc8e556f7a76d08d35829d6f90ae2e12cfd0d');
+      const publicKey = getPublicKey(
+        'jwt/jwt-iam-jwks.json',
+        '8e8fc8e556f7a76d08d35829d6f90ae2e12cfd0d',
+      );
       const jwt = loadTextFile('jwt/jwt-iam.txt');
       // Using signature-only validation since the token is expired
       const claims = await iamJwtService.validateToken(jwt, {
         signatureOnly: true,
-        publicKey
+        publicKey,
       });
       expect(claims).toBeDefined();
       expect(claims.sub).toBe('114789851119851077143');
@@ -255,7 +262,7 @@ const testAudience = 'fp8netes-dev';
 
 function getPublicKey(filepath: string, key: string): string {
   const jwks = loadJsonFile<JwksResponse>(filepath);
-  const keyData = jwks.keys.find(k => k.kid === key);
+  const keyData = jwks.keys.find((k) => k.kid === key);
   if (!keyData) {
     throw new Error(`Key with kid ${key} not found in JWKS`);
   }

@@ -1,34 +1,30 @@
 import * as jwt from 'jsonwebtoken';
-import { IJwtClaim, IJwtValidationOptions } from '../core/interfaces';
-import { createLogger } from '../core/logger';
 import {
-  JwtValidator,
-} from '../jwt/validator';
-import {
-  JwtServiceOptions,
-  OpenIdConfiguration
-} from 'jwt/interfaces';
-import { discoverJwksUri, fetchJwks, rsaJwkToPem } from '../jwt/utils';
+  createLogger,
+  getShortenedString,
+  IJwtClaim,
+  IJwtValidationOptions,
+} from '../core';
+import { JwtConfig } from 'dto/config.dto';
+import { JwtValidator, discoverJwksUri, fetchJwks, rsaJwkToPem } from '../jwt';
 
 const logger = createLogger('JwtService');
 
 export class JwtService {
   private readonly issuer: string;
-  private readonly audience?: string;
+  private readonly audience: string;
   private readonly clockTolerance: number;
   private readonly maxCacheAge: number;
-  private readonly validator?: JwtValidator;
+  private readonly validator: JwtValidator;
 
-  private jwksUri?: string;
   private keyCache: Map<string, { key: string; cachedAt: number }> = new Map();
-  private configCache?: { config: OpenIdConfiguration; cachedAt: number };
 
-  constructor(options: JwtServiceOptions) {
-    this.issuer = options.issuer;
-    this.audience = options.audience;
-    this.clockTolerance = options.clockTolerance || 30; // 30 seconds tolerance
-    this.maxCacheAge = options.maxCacheAge || 3600000; // 1 hour in milliseconds
-    this.validator = options.validator;
+  constructor(config: JwtConfig) {
+    this.issuer = config.issuer;
+    this.audience = config.audience;
+    this.clockTolerance = config.clockTolerance || 30; // 30 seconds tolerance
+    this.maxCacheAge = config.maxCacheAge || 3600000; // 1 hour in milliseconds
+    this.validator = new JwtValidator(config);
   }
 
   /**
@@ -38,44 +34,65 @@ export class JwtService {
    * @returns Promise<IJwtClaim> - The validated JWT claims
    */
   public async validateToken(
-    token: string,
+    token: string | undefined,
     options?: IJwtValidationOptions,
   ): Promise<IJwtClaim> {
     try {
+      if (token === undefined) {
+        throw new Error('JWT token is undefined');
+      }
+
       // Decode the token header to get the key ID
+      const shortToken = getShortenedString(token, 25);
       const decoded = jwt.decode(token, { complete: true });
       if (!decoded || typeof decoded === 'string') {
         throw new Error('Invalid JWT token format');
       }
 
-      const { header } = decoded;
+      const { header, payload } = decoded;
       const keyId = header.kid;
 
+      let issuer: string | undefined;
+
+      if (typeof payload === 'string') {
+        const json = JSON.parse(payload);
+        issuer = json.iss;
+      } else {
+        issuer = payload.iss;
+      }
+
+      if (!issuer) {
+        throw new Error(`JWT token ${shortToken} missing issuer (iss) claim`);
+      }
+
       if (!keyId) {
-        throw new Error('JWT token missing key ID (kid) in header');
+        throw new Error(
+          `JWT token ${shortToken} missing key ID (kid) in header`,
+        );
       }
 
       // Get the public key for validation
       let publicKey = options?.publicKey;
       if (publicKey === undefined) {
-        publicKey = await this.getPublicKey(keyId);
+        publicKey = await this.getPublicKey(keyId, issuer);
       }
 
       // Verify the token
       const verifyOptions: jwt.VerifyOptions = {
         issuer: this.issuer,
+        audience: this.audience,
         clockTolerance: this.clockTolerance,
       };
 
-      if (this.audience) {
-        verifyOptions.audience = this.audience;
-      }
-
       // If signatureOnly is true, ignore expiry validation
       if (options?.signatureOnly) {
+        logger.debug(
+          `JWT token ${shortToken} validation with signature only, ignoring expiration`,
+        );
         verifyOptions.ignoreExpiration = true;
       }
 
+      logger.info(`Validating JWT with claim ${JSON.stringify(payload)}`);
       const claims = jwt.verify(token, publicKey, verifyOptions) as IJwtClaim;
 
       // Additional validation using the configured validator
@@ -116,21 +133,20 @@ export class JwtService {
    * @param keyId - The key ID to retrieve
    * @returns Promise<string> - The public key in PEM format
    */
-  private async getPublicKey(keyId: string): Promise<string> {
+  private async getPublicKey(keyId: string, issuer: string): Promise<string> {
     // Check cache first
-    const cached = this.keyCache.get(keyId);
+    const cachedKey = `${issuer}:${keyId}`;
+    const cached = this.keyCache.get(cachedKey);
     if (cached && Date.now() - cached.cachedAt < this.maxCacheAge) {
       logger.debug('Using cached public key', { keyId });
       return cached.key;
     }
 
     // Get JWKS URI if not cached
-    if (!this.jwksUri) {
-      this.jwksUri = await discoverJwksUri(this.issuer);
-    }
+    const jwksUri = await discoverJwksUri(issuer);
 
     // Fetch JWKS and find the key
-    const jwks = await fetchJwks(this.jwksUri);
+    const jwks = await fetchJwks(jwksUri);
     const jwkKey = jwks.keys.find((key) => key.kid === keyId);
 
     if (!jwkKey) {
@@ -141,7 +157,7 @@ export class JwtService {
     const publicKey = rsaJwkToPem(jwkKey);
 
     // Cache the key
-    this.keyCache.set(keyId, {
+    this.keyCache.set(cachedKey, {
       key: publicKey,
       cachedAt: Date.now(),
     });
@@ -155,8 +171,6 @@ export class JwtService {
    */
   public clearCache(): void {
     this.keyCache.clear();
-    this.configCache = undefined;
-    this.jwksUri = undefined;
     logger.debug('JWT service cache cleared');
   }
 }

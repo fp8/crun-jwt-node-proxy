@@ -1,5 +1,3 @@
-import type { JwtValidator } from './validator';
-
 // JWT-related interfaces
 
 export interface JwksKey {
@@ -23,12 +21,4 @@ export interface OpenIdConfiguration {
   authorization_endpoint?: string;
   token_endpoint?: string;
   userinfo_endpoint?: string;
-}
-
-export interface JwtServiceOptions {
-  issuer: string;
-  audience?: string;
-  clockTolerance?: number;
-  maxCacheAge?: number;
-  validator?: JwtValidator;
 }

@@ -21,6 +21,8 @@ export function loadJsonFile<T>(filePath: string): T {
   try {
     return JSON.parse(content) as T;
   } catch (error) {
-    throw new Error(`Failed to parse JSON from ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to parse JSON from ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }

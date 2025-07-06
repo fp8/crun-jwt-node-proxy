@@ -19,9 +19,9 @@ export class JwtValidator {
   protected filter: IJwtMatcher[] = [];
   protected mapper: Record<string, string> = {};
 
-  constructor(jwtConfig: JwtConfig) {
-    if (jwtConfig.filter) {
-      for (const [key, value] of Object.entries(jwtConfig.filter)) {
+  constructor(config: JwtConfig) {
+    if (config.filter) {
+      for (const [key, value] of Object.entries(config.filter)) {
         if (value.startsWith('/')) {
           const regexPattern = value.slice(1, -1); // Remove leading and trailing /
           this.filter.push({ field: key, regex: new RegExp(regexPattern) });
@@ -31,7 +31,7 @@ export class JwtValidator {
       }
     }
 
-    this.mapper = jwtConfig.mapper || {};
+    this.mapper = config.mapper || {};
   }
 
   /**

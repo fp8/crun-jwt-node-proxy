@@ -2,11 +2,7 @@ import '../testlib';
 
 import * as https from 'https';
 import * as http from 'http';
-import { 
-  discoverJwksUri, 
-  fetchJwks, 
-  rsaJwkToPem 
-} from '../../src/jwt/utils';
+import { discoverJwksUri, fetchJwks, rsaJwkToPem } from '../../src/jwt/utils';
 import { JwksKey, JwksResponse, OpenIdConfiguration } from 'jwt/interfaces';
 
 // Mock the https and http modules
@@ -83,7 +79,7 @@ describe('JWT Utils', () => {
       });
 
       await expect(discoverJwksUri('https://example.com')).rejects.toThrow(
-        'Failed to discover JWKS URI: JWKS URI not found in OpenID configuration'
+        'Failed to discover JWKS URI: JWKS URI not found in OpenID configuration',
       );
     });
 
@@ -103,7 +99,7 @@ describe('JWT Utils', () => {
       });
 
       await expect(discoverJwksUri('https://example.com')).rejects.toThrow(
-        'Failed to discover JWKS URI: Request failed: Network error'
+        'Failed to discover JWKS URI: Request failed: Network error',
       );
     });
   });
@@ -145,7 +141,9 @@ describe('JWT Utils', () => {
         return mockRequest;
       });
 
-      const result = await fetchJwks('https://example.com/.well-known/jwks.json');
+      const result = await fetchJwks(
+        'https://example.com/.well-known/jwks.json',
+      );
       expect(result).toEqual(mockJwks);
     });
 
@@ -164,9 +162,9 @@ describe('JWT Utils', () => {
         return mockRequest;
       });
 
-      await expect(fetchJwks('https://example.com/.well-known/jwks.json')).rejects.toThrow(
-        'Failed to fetch JWKS: Request failed: Network error'
-      );
+      await expect(
+        fetchJwks('https://example.com/.well-known/jwks.json'),
+      ).rejects.toThrow('Failed to fetch JWKS: Request failed: Network error');
     });
   });
 
@@ -182,7 +180,7 @@ describe('JWT Utils', () => {
       };
 
       const result = rsaJwkToPem(mockJwk);
-      
+
       expect(result).toContain('-----BEGIN PUBLIC KEY-----');
       expect(result).toContain('-----END PUBLIC KEY-----');
       expect(typeof result).toBe('string');
@@ -209,7 +207,9 @@ describe('JWT Utils', () => {
         alg: 'RS256',
       };
 
-      expect(() => rsaJwkToPem(mockJwk)).toThrow('Invalid RSA key: missing n or e parameters');
+      expect(() => rsaJwkToPem(mockJwk)).toThrow(
+        'Invalid RSA key: missing n or e parameters',
+      );
     });
 
     it('should throw error for invalid RSA key (missing e)', () => {
@@ -222,7 +222,9 @@ describe('JWT Utils', () => {
         alg: 'RS256',
       };
 
-      expect(() => rsaJwkToPem(mockJwk)).toThrow('Invalid RSA key: missing n or e parameters');
+      expect(() => rsaJwkToPem(mockJwk)).toThrow(
+        'Invalid RSA key: missing n or e parameters',
+      );
     });
 
     it('should handle various RSA key sizes', () => {
@@ -236,7 +238,7 @@ describe('JWT Utils', () => {
       };
 
       const result = rsaJwkToPem(mockJwk);
-      
+
       expect(result).toContain('-----BEGIN PUBLIC KEY-----');
       expect(result).toContain('-----END PUBLIC KEY-----');
       expect(typeof result).toBe('string');
@@ -268,7 +270,7 @@ describe('JWT Utils', () => {
       });
 
       await expect(discoverJwksUri('https://example.com')).rejects.toThrow(
-        'Failed to discover JWKS URI: Failed to parse JSON response:'
+        'Failed to discover JWKS URI: Failed to parse JSON response:',
       );
     });
 
@@ -297,7 +299,7 @@ describe('JWT Utils', () => {
       });
 
       await expect(discoverJwksUri('https://example.com')).rejects.toThrow(
-        'Failed to discover JWKS URI: HTTP 404: Not Found'
+        'Failed to discover JWKS URI: HTTP 404: Not Found',
       );
     });
 
@@ -317,7 +319,7 @@ describe('JWT Utils', () => {
       });
 
       await expect(discoverJwksUri('https://example.com')).rejects.toThrow(
-        'Failed to discover JWKS URI: Request timeout'
+        'Failed to discover JWKS URI: Request timeout',
       );
     });
   });
