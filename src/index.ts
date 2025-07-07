@@ -5,7 +5,7 @@ import * as http from 'http';
 import * as httpProxy from 'http-proxy';
 
 import { createError, createLogger, IJwtClaim } from './core';
-import { JwtService } from 'services/jwt.service';
+import { JwtService } from './services/jwt.service';
 export const logger = createLogger();
 
 const jwtService = new JwtService(CONFIG_DATA.jwt);

@@ -9,7 +9,7 @@
   },
   "packageManager": "yarn@4.9.2",
   "scripts": {
-    "build:ts": "nest build --path ./tsconfig.build.json",
+    "build:ts": "tsc --project ./tsconfig.build.json",
     "build": "yarn lint && yarn build:ts",
     "lint:format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint:ts": "eslint \"{src,test}/**/*.ts\" --fix",

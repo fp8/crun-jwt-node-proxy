@@ -13,15 +13,13 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-rm -rf node_modules
-if [ $? -ne 0 ]; then
-  echo "Failed to remove node_modules dir."
-  exit 1
-fi
-
 # Setup for prod
 yarn workspaces focus --production
 if [ $? -ne 0 ]; then
   echo "Yarn workspaces focus failed. Exiting."
   exit 1
 fi
+
+# Done.  Show message and list files
+echo "cloud-build-setup.sh completed successfully."
+ls -l

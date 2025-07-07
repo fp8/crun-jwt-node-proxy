@@ -20,4 +20,4 @@ EXPOSE 8080
 
 ENTRYPOINT ["node"]
 
-CMD ["./app/main.js"]
+CMD ["./app/index.js"]

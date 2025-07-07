@@ -2,6 +2,7 @@
 *
 
 # Except the Cloud Function files we want to deploy
+!.yarnrc.yml
 !yarn.lock
 !package.json
 !tsconfig.json
