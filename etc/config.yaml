@@ -1,0 +1,11 @@
+name: crun-jwt-proxy
+port: 8888
+proxy:
+  url: http://localhost:8080
+jwt:
+  issuer: https://securetoken.google.com/{{ENV.GOOGLE_CLOUD_PROJECT}}
+  audience: "{{ENV.GOOGLE_CLOUD_PROJECT}}"
+  mapper:
+    acls: X-AUTH-ACL
+    email: X-AUTH-EMAIL
+    sub: X-AUTH-USERID

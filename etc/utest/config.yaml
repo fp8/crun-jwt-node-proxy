@@ -1,5 +1,5 @@
 name: crun-jwt-proxy-utest
-port: 8080
+port: 8888
 proxy:
   url: https://request-echo-839315814860.europe-west1.run.app
   certPath: ./certs/client-identity.p12

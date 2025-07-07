@@ -10,6 +10,9 @@ import {
   IsUrl,
   ValidateNested,
 } from 'class-validator';
+import { createLogger } from '../core';
+
+const logger = createLogger('config.dto');
 
 export class JwtConfig {
   @IsString()
@@ -35,7 +38,7 @@ export class JwtConfig {
 }
 
 export class ProxyConfig {
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   url!: string;
 
   @IsOptional()
@@ -62,8 +65,20 @@ export class ConfigData {
   @ValidateNested()
   proxy!: ProxyConfig;
 
+  getProxyPort(): number {
+    if (process.env.PORT) {
+      const port = parseInt(process.env.PORT, 10);
+      logger.debug(`Using PORT from environment: ${port}`);
+      return port;
+    } else {
+      return this.port;
+    }
+  }
+
   getProxyTarget(): ProxyTarget {
-    const url = new URL(this.proxy.url);
+    const url = getProxyURL(this.proxy);
+
+    // If port is not specified in the URL, use default ports based on protocol
     const port = url.port
       ? parseInt(url.port, 10)
       : url.protocol === 'https:'
@@ -71,11 +86,12 @@ export class ConfigData {
         : 80;
 
     const output: ProxyTarget = {
-      host: url.host,
+      host: url.hostname,
       port,
       protocol: url.protocol,
     };
 
+    // Retrive the client certificate to use if target is https
     if (this.proxy.certPath) {
       try {
         output.pfx = fs.readFileSync(this.proxy.certPath);
@@ -87,6 +103,29 @@ export class ConfigData {
       }
     }
 
+    logger.debug(`Proxy target: ${JSON.stringify(output)}`);
     return output;
   }
+}
+
+/**
+ * This function checks if the `PROXY_TARGET` environment variable is set,
+ * and if so, uses that as the proxy URL. Otherwise, it uses the URL from
+ * the provided `proxyConfig`.
+ *
+ * @param proxyConfig
+ * @returns
+ */
+function getProxyURL(proxyConfig: ProxyConfig): URL {
+  let proxyUrl: string;
+  if (process.env.PROXY_TARGET) {
+    proxyUrl = process.env.PROXY_TARGET;
+    logger.debug(`Using PROXY_TARGET from environment: ${proxyUrl}`);
+  } else {
+    proxyUrl = proxyConfig.url;
+    logger.debug(`Using PROXY_TARGET from config: ${proxyUrl}`);
+  }
+  const output = new URL(proxyUrl);
+
+  return output;
 }

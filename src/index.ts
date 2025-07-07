@@ -46,5 +46,6 @@ const server = http.createServer(async function (req, res) {
   proxy.web(req, res);
 });
 
-logger.info(`Starting proxy server on port ${CONFIG_DATA.port}`);
-server.listen(CONFIG_DATA.port);
+const port = CONFIG_DATA.getProxyPort();
+logger.info(`Starting proxy server on port ${port}`);
+server.listen(port);

@@ -1,0 +1,30 @@
+steps:
+  - name: 'farport/node-builder:22.16.0-alpine'
+    entrypoint: /bin/sh
+    args: ['-c', './scripts/cloud-build-setup.sh']
+    secretEnv: ['NPM_AUTH_IDENT']
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - 'build'
+      - '-t'
+      - '${_DOCKER_PREFIX}/${_DOCKER_BASE}:${_DOCKER_VERSION}'
+      - '.'
+      - '--build-arg'
+      - 'version=${_DOCKER_VERSION}'
+      - '--build-arg'
+      - 'git_commit=${_GIT_COMMIT}'
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/623356595940/secrets/NPM_AUTH_IDENT/versions/latest
+      env: 'NPM_AUTH_IDENT'
+
+substitutions:
+  _DOCKER_PREFIX: 'europe-west1-docker.pkg.dev/fp8-candidates-app/docker'
+  _DOCKER_BASE: 'core-api'
+  _DOCKER_VERSION: '0.0.0' # To be overriden by command line
+  _GIT_COMMIT: '' # To be overriden by command line
+
+images:
+  - '${_DOCKER_PREFIX}/${_DOCKER_BASE}:${_DOCKER_VERSION}'
