@@ -10,7 +10,9 @@ import {
   IsUrl,
   ValidateNested,
 } from 'class-validator';
-import { createLogger } from '../core';
+
+// Importing directly from logger.ts file to avoid circular dependency issues
+import { createLogger } from '../core/logger';
 
 const logger = createLogger('config.dto');
 

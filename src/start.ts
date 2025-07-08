@@ -10,6 +10,9 @@ import 'reflect-metadata';
 import { LogLevel, SimpleTextDestination } from 'jlog-facade';
 SimpleTextDestination.use(LogLevel.OFF);
 
+import { GCloudDestination } from 'jlog-gcloud-dest';
+GCloudDestination.use(LogLevel.OFF);
+
 // Load the config and export ConfigStore and ConfigData
 import { createConfigStore } from './core/config';
 

@@ -1,6 +1,6 @@
 {
     "destination": {
-        "SimpleTextDestination": {
+        "GCloudDestination": {
             "severity": "debug"
         }
     }

@@ -2059,6 +2059,7 @@ __metadata:
     http-proxy: "npm:^1.18.1"
     jest: "npm:^29.7.0"
     jlog-facade: "npm:^0.9.1"
+    jlog-gcloud-dest: "npm:^0.3.2"
     jsonwebtoken: "npm:^9.0.2"
     jwt-decode: "npm:^4.0.0"
     prettier: "npm:^3.4.2"
@@ -3565,6 +3566,15 @@ __metadata:
   version: 0.9.1
   resolution: "jlog-facade@npm:0.9.1"
   checksum: 10/3c2d215eb5e7aa34e3b441c76adb25d91036e957e06c95b926f9e12ec76595fa8965ccc6f31f44a71ea0f5bc496375908b2c88557da18dec9c004f3b611e14b2
+  languageName: node
+  linkType: hard
+
+"jlog-gcloud-dest@npm:^0.3.2":
+  version: 0.3.2
+  resolution: "jlog-gcloud-dest@npm:0.3.2"
+  dependencies:
+    jlog-facade: "npm:^0.9.1"
+  checksum: 10/b68a1c041af30a4e8c8ad5d0feff6088cd5897d5067f1f44de23b7afd8fe13d638222b7a2594bab80e9927cba724dd9c8317e9513b6a9bc3a80555acf9cfb981
   languageName: node
   linkType: hard
 
