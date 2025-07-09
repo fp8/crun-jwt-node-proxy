@@ -6,6 +6,7 @@ import * as httpProxy from 'http-proxy';
 
 import { createError, createLogger, IJwtClaim } from './core';
 import { JwtService } from './services/jwt.service';
+
 export const logger = createLogger();
 
 const jwtService = new JwtService(CONFIG_DATA.jwt);
@@ -44,6 +45,22 @@ const server = http.createServer(async function (req, res) {
     }
   }
   proxy.web(req, res);
+});
+
+// response to SIGINT
+process.on('SIGINT', () => {
+  // ToDo: do any cleanup if necessary
+  logger.warn('Received SIGINT, shutting proxy server...');
+  server.close((err) => {
+    if (err) {
+      logger.error(
+        `Error occurred while shutting down: ${err.message}.  Forcing exit.`,
+      );
+      process.exit(0);
+    } else {
+      logger.info('Server shut down gracefully');
+    }
+  });
 });
 
 const port = CONFIG_DATA.getProxyPort();

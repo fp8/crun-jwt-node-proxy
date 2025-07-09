@@ -11,7 +11,9 @@ import { LogLevel, SimpleTextDestination } from 'jlog-facade';
 SimpleTextDestination.use(LogLevel.OFF);
 
 import { GCloudDestination } from 'jlog-gcloud-dest';
-GCloudDestination.use(LogLevel.OFF);
+if (process.env.NODE_ENV === 'production') {
+    GCloudDestination.use(LogLevel.DEBUG);
+}
 
 // Load the config and export ConfigStore and ConfigData
 import { createConfigStore } from './core/config';
