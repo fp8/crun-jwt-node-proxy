@@ -1,8 +1,4 @@
 steps:
-  - name: 'farport/node-builder:22.16.0-alpine'
-    entrypoint: /bin/sh
-    args: ['-c', './scripts/cloud-build-setup.sh']
-
   - name: gcr.io/cloud-builders/docker
     args:
       - 'build'

@@ -17,7 +17,6 @@ WORKDIR /proj
 RUN yarn install
 RUN yarn build:ts
 RUN yarn workspaces focus --production
-RUN ls -l
 
 FROM node:22.16-alpine3.22
 
