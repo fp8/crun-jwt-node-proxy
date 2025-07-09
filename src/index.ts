@@ -34,9 +34,21 @@ const server = http.createServer(async function (req, res) {
     return;
   }
 
+  // Remove all incoming headers with the configured prefix
+  const authHeaderPrefix = CONFIG_DATA.jwt.authHeaderPrefix;
+  const headersToRemove = Object.keys(req.headers).filter((headerName) =>
+    headerName.toLowerCase().startsWith(authHeaderPrefix.toLowerCase()),
+  );
+
+  headersToRemove.forEach((headerName) => {
+    delete req.headers[headerName];
+    logger.debug(`Removed incoming header: ${headerName}`);
+  });
+
   // Map the JWT claims to headers
   const headers = jwtService.mapClaims(claims);
   logger.info(`Mapping JWT claims to headers: ${JSON.stringify(headers)}`);
+
   for (const [key, value] of Object.entries(headers)) {
     if (value !== undefined) {
       req.headers[key] = value;

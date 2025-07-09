@@ -387,6 +387,84 @@ describe('JwtValidator', () => {
     });
   });
 
+  describe('map with authHeaderPrefix validation', () => {
+    it('should map claims to headers with correct prefix', () => {
+      const config = new JwtConfig();
+      config.authHeaderPrefix = 'X-AUTH-';
+      config.mapper = {
+        email: 'X-AUTH-EMAIL',
+        role: 'X-AUTH-ROLE',
+        sub: 'X-AUTH-USER-ID',
+      };
+
+      const validator = new JwtValidator(config);
+      const mockClaim: IJwtClaim = {
+        sub: 'user123',
+        iss: 'test',
+        aud: 'test',
+        email: 'user@example.com',
+        role: 'admin',
+        exp: 123456789,
+        iat: 123456789,
+      };
+
+      const result = validator.map(mockClaim);
+      expect(result).toEqual({
+        'X-AUTH-EMAIL': 'user@example.com',
+        'X-AUTH-ROLE': 'admin',
+        'X-AUTH-USER-ID': 'user123',
+      });
+    });
+
+    it('should handle mapper with mixed case prefix correctly', () => {
+      const config = new JwtConfig();
+      config.authHeaderPrefix = 'X-Auth-';
+      config.mapper = {
+        email: 'X-Auth-Email',
+        role: 'X-Auth-Role',
+      };
+
+      const validator = new JwtValidator(config);
+      const mockClaim: IJwtClaim = {
+        sub: 'user123',
+        iss: 'test',
+        aud: 'test',
+        email: 'user@example.com',
+        role: 'admin',
+        exp: 123456789,
+        iat: 123456789,
+      };
+
+      const result = validator.map(mockClaim);
+      expect(result).toEqual({
+        'X-Auth-Email': 'user@example.com',
+        'X-Auth-Role': 'admin',
+      });
+    });
+
+    it('should return empty object when claims are missing for mapped fields', () => {
+      const config = new JwtConfig();
+      config.authHeaderPrefix = 'X-AUTH-';
+      config.mapper = {
+        nonExistentField: 'X-AUTH-NON-EXISTENT',
+        anotherMissingField: 'X-AUTH-ANOTHER-MISSING',
+      };
+
+      const validator = new JwtValidator(config);
+      const mockClaim: IJwtClaim = {
+        sub: 'user123',
+        iss: 'test',
+        aud: 'test',
+        email: 'user@example.com',
+        exp: 123456789,
+        iat: 123456789,
+      };
+
+      const result = validator.map(mockClaim);
+      expect(result).toEqual({});
+    });
+  });
+
   describe('integration tests', () => {
     it('should validate and map claims together', () => {
       const config = new JwtConfig();

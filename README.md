@@ -12,6 +12,7 @@ Following ends are required for cloud run to work:
 * `GOOGLE_CLOUD_PROJECT`: This must be set to the cloud run project id
 * `PROXY_TARGET`: The url of target project. Defaults to `http://localhost:8080`
 * `PORT`: The port that proxy should be listening.  Defaults to `8888`
+* `NODE_ENV`: When this is set to `PRODUCTION`, `GCloudDestination` will be used
 
 ## Configuration
 

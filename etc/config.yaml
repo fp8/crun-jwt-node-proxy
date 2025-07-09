@@ -5,7 +5,8 @@ proxy:
 jwt:
   issuer: https://securetoken.google.com/{{ENV.GOOGLE_CLOUD_PROJECT}}
   audience: "{{ENV.GOOGLE_CLOUD_PROJECT}}"
+  authHeaderPrefix: "X-AUTH-"
   mapper:
-    acls: X-AUTH-ACL
+    roles: X-AUTH-ROLES
     email: X-AUTH-EMAIL
     sub: X-AUTH-USERID

@@ -6,6 +6,7 @@ proxy:
 jwt:
   issuer: https://securetoken.google.com/{{ENV.GOOGLE_CLOUD_PROJECT}}
   audience: "{{ENV.GOOGLE_CLOUD_PROJECT}}"
+  authHeaderPrefix: "X-AUTH-"
   filter:
     email: /farport.co$/
   mapper:

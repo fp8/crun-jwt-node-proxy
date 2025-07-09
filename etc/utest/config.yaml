@@ -7,6 +7,7 @@ jwt:
   issuer: https://securetoken.google.com/{{ENV.GOOGLE_CLOUD_PROJECT}}
   audience: "{{ENV.GOOGLE_CLOUD_PROJECT}}"
   clockTolerance: 33
+  authHeaderPrefix: "X-AUTH-"
   filter:
     email: /test\.com$/
   mapper:

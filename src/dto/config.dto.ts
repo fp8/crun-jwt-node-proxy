@@ -14,6 +14,8 @@ import {
 // Importing directly from logger.ts file to avoid circular dependency issues
 import { createLogger } from '../core/logger';
 
+import { IsMapperKeysValid } from './validators';
+
 const logger = createLogger('config.dto');
 
 export class JwtConfig {
@@ -23,6 +25,10 @@ export class JwtConfig {
   @IsString()
   @IsNotEmpty()
   audience!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  authHeaderPrefix!: string;
 
   @IsOptional()
   @IsNumber()
@@ -36,6 +42,7 @@ export class JwtConfig {
   filter: Record<string, string> = {};
 
   @IsObject()
+  @IsMapperKeysValid()
   mapper: Record<string, string> = {};
 }
 

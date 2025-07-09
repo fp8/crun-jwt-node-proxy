@@ -12,7 +12,7 @@ SimpleTextDestination.use(LogLevel.OFF);
 
 import { GCloudDestination } from 'jlog-gcloud-dest';
 if (process.env.NODE_ENV === 'production') {
-    GCloudDestination.use(LogLevel.DEBUG);
+  GCloudDestination.use(LogLevel.DEBUG);
 }
 
 // Load the config and export ConfigStore and ConfigData
