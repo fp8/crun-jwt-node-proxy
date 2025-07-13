@@ -1,5 +1,9 @@
 # Typescript Starter Project Release Note
 
+## 0.3.0 [2025-07-13]
+
+* Added support to retrive Google Cloud Project ID from metadata server
+
 ## 0.2.0 [2025-07-09]
 
 * Added `authHeaderPrefix` to `JwtConfig` to ensure that all auth header

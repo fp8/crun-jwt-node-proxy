@@ -1,6 +1,6 @@
 {
   "name": "crun-jwt-proxy",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A JWT parsing proxy for Cloud Run Service to be ran as a sidecar",
   "author": "marcos.lin@farport.co",
   "license": "MIT",
