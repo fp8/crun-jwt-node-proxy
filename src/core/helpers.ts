@@ -1,7 +1,10 @@
+import * as http from 'http';
+import * as https from 'https';
 import { jwtDecode } from 'jwt-decode';
+import { isEmpty } from 'jlog-facade';
+
 import { createLogger } from './logger';
 import { IJwtClaim } from './interfaces';
-import { isEmpty } from 'class-validator';
 
 const logger = createLogger();
 
@@ -72,5 +75,81 @@ export function decodeJwt(token?: string): IJwtClaim {
     const error = createError(err);
     logger.error(`Failed to decode JWT: ${error.message}`);
     throw error;
+  }
+}
+
+// From gcutils
+/**
+ * Fetches text content from a URL
+ */
+export async function fetch(
+  url: string,
+  headers?: Record<string, string>,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const parsedUrl = new URL(url);
+    const isHttps = parsedUrl.protocol === 'https:';
+    const requestModule = isHttps ? https : http;
+
+    const options = {
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.port || (isHttps ? 443 : 80),
+      path: parsedUrl.pathname + parsedUrl.search,
+      method: 'GET',
+      headers: {
+        'User-Agent': '@farport/gcutils',
+        ...headers, // Merge additional headers
+      },
+      timeout: 5000, // 5 seconds timeout (increased for HTTPS)
+    };
+
+    const req = requestModule.request(options, (res) => {
+      const data: string[] = [];
+
+      res.on('data', (chunk) => {
+        data.push(chunk.toString());
+      });
+
+      res.on('end', () => {
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(data.join(''));
+        } else {
+          reject(new Error(`HTTP ${res.statusCode}: ${res.statusMessage}`));
+        }
+      });
+    });
+
+    req.on('error', (error) => {
+      reject(new Error(`Request failed: ${error.message}`));
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
+    });
+
+    req.end();
+  });
+}
+
+/**
+ * Fetches JSON from a URL
+ */
+export async function fetchJson<T>(
+  url: string,
+  headers?: Record<string, string>,
+): Promise<T> {
+  const headersWithAccept = {
+    Accept: 'application/json',
+    ...headers,
+  };
+
+  const text = await fetch(url, headersWithAccept);
+
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to parse JSON response: ${errorMessage}`);
   }
 }

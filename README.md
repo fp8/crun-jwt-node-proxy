@@ -1,9 +1,9 @@
 # crun-jwt-proxy
 
-This project creates a docker image that is to be deployed as a sidecar
-in a cloud run service to validate firebase jwt.  The validation is
-project id specific so as long as `GOOGLE_CLOUD_PROJECT` is provided
-the Firebase Auth jwt should be validated correctly.
+This project creates a docker image that is to be deployed as a sidecar in a Google
+Cloud Run service to validate Firebase Auth JWT.  The validation is project id specific
+so as long as `GOOGLE_CLOUD_PROJECT` is provided the Firebase Auth JWT should be
+validated correctly.
 
 ## ENV needed for proxy service
 

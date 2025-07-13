@@ -1,7 +1,6 @@
-import * as https from 'https';
-import * as http from 'http';
-import { URL } from 'url';
 import { JwksKey, JwksResponse, OpenIdConfiguration } from './interfaces';
+
+import { fetchJson } from '../core/helpers';
 import { createLogger } from '../core/logger';
 
 const logger = createLogger('jwt.utils');
@@ -159,60 +158,4 @@ function derToPem(der: Buffer, type: string): string {
   const base64 = der.toString('base64');
   const pem = base64.match(/.{1,64}/g)?.join('\n') || base64;
   return `-----BEGIN ${type}-----\n${pem}\n-----END ${type}-----\n`;
-}
-
-/**
- * Fetches JSON from a URL
- */
-export async function fetchJson<T>(url: string): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const parsedUrl = new URL(url);
-    const client = parsedUrl.protocol === 'https:' ? https : http;
-
-    const options = {
-      hostname: parsedUrl.hostname,
-      port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
-      path: parsedUrl.pathname + parsedUrl.search,
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        'User-Agent': 'crun-jwt-proxy/0.1.0',
-      },
-      timeout: 10000, // 10 seconds timeout
-    };
-
-    const req = client.request(options, (res) => {
-      let data = '';
-
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-
-      res.on('end', () => {
-        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-          try {
-            const parsed = JSON.parse(data);
-            resolve(parsed);
-          } catch (error) {
-            const errorMessage =
-              error instanceof Error ? error.message : String(error);
-            reject(new Error(`Failed to parse JSON response: ${errorMessage}`));
-          }
-        } else {
-          reject(new Error(`HTTP ${res.statusCode}: ${res.statusMessage}`));
-        }
-      });
-    });
-
-    req.on('error', (error) => {
-      reject(new Error(`Request failed: ${error.message}`));
-    });
-
-    req.on('timeout', () => {
-      req.destroy();
-      reject(new Error('Request timeout'));
-    });
-
-    req.end();
-  });
 }

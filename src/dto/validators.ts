@@ -42,6 +42,6 @@ export function IsMapperKeysValid(validationOptions?: ValidationOptions) {
         },
       },
     },
-    validationOptions
+    validationOptions,
   );
 }

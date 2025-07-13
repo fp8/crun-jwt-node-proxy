@@ -12,7 +12,7 @@ const logger = createLogger('JwtService');
 
 export class JwtService {
   private readonly issuer: string;
-  private readonly audience: string;
+  private readonly audience: string | undefined;
   private readonly clockTolerance: number;
   private readonly maxCacheAge: number;
   private readonly validator: JwtValidator;

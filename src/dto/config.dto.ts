@@ -22,9 +22,9 @@ export class JwtConfig {
   @IsString()
   issuer!: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  audience!: string;
+  audience?: string | undefined;
 
   @IsString()
   @IsNotEmpty()
@@ -32,11 +32,11 @@ export class JwtConfig {
 
   @IsOptional()
   @IsNumber()
-  clockTolerance = 30; // 30 seconds tolerance for jwt exp and nbf claims
+  clockTolerance? = 30; // 30 seconds tolerance for jwt exp and nbf claims
 
   @IsOptional()
   @IsNumber()
-  maxCacheAge = 3600000 * 24; // 3600000 milliseconds is 1 hour, default is 24 hours
+  maxCacheAge? = 3600000 * 24; // 3600000 milliseconds is 1 hour, default is 24 hours
 
   @IsObject()
   filter: Record<string, string> = {};

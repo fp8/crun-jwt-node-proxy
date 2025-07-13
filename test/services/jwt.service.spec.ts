@@ -1,4 +1,4 @@
-import { loadTextFile, loadJsonFile } from '../testlib';
+import { loadTextFile, loadJsonFile, execShell } from '../testlib';
 import * as jwt from 'jsonwebtoken';
 
 import { JwtService } from '../../src/services/jwt.service';
@@ -17,6 +17,13 @@ const createJwtConfig = (overrides: Partial<JwtConfig> = {}): JwtConfig => ({
   mapper: {},
   ...overrides,
 });
+
+const idTokenJwtConfig: JwtConfig = {
+  issuer: 'https://accounts.google.com',
+  authHeaderPrefix: 'X-AUTH-',
+  filter: {},
+  mapper: {},
+};
 
 describe('JwtService', () => {
   const testIssuer = 'https://securetoken.google.com/fp8netes-dev';
@@ -172,6 +179,16 @@ describe('JwtService', () => {
         expect(err.message).toContain('JWT validation failed');
         expect(err.message.toLowerCase()).toContain('expired');
       }
+    });
+
+    it('validate Google identity token', async () => {
+      const service = new JwtService(idTokenJwtConfig);
+      // Required that google cloud project is configured and authenticated
+      // with `gcloud auth application-default login`
+      const jwt = await execShell('gcloud auth print-identity-token');
+      const claims = await service.validateToken(jwt);
+      expect(claims).toBeDefined();
+      expect(claims.email).toBeDefined();
     });
 
     it('validate IAM JWT with signature only (ignoring expiry)', async () => {
