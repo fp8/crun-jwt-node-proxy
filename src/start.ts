@@ -16,7 +16,13 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Load the config and export ConfigStore and ConfigData
-import { createConfigStore } from './core/config';
+import { createConfigStore, prepareProjectEnv } from './core/config';
+import { ConfigData } from 'dto/config.dto';
 
 export const CONFIG_STORE = createConfigStore();
-export const CONFIG_DATA = CONFIG_STORE.data;
+
+export async function getConfigData(): Promise<ConfigData> {
+  await prepareProjectEnv();
+  const store = createConfigStore();
+  return store.data;
+}
