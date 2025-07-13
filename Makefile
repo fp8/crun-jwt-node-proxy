@@ -1,4 +1,6 @@
-IMAGE_PREFIX     := europe-west1-docker.pkg.dev/fp8netes-dev/docker
+GCP_PROJECT      := $(shell gcloud config list --format="value(core.project)")
+
+IMAGE_PREFIX     := europe-west1-docker.pkg.dev/$(GCP_PROJECT)/docker
 IMAGE_BASE       := crun-jwt-node-proxy
 IMAGE_VERSION    := $(shell node scripts/package-version.js)
 IMAGE_NAME       := $(IMAGE_PREFIX)/$(IMAGE_BASE):$(IMAGE_VERSION)
@@ -6,7 +8,6 @@ IMAGE_NAME       := $(IMAGE_PREFIX)/$(IMAGE_BASE):$(IMAGE_VERSION)
 LABEL_VERSION    := $(shell echo $(IMAGE_VERSION) | sed -e 's/\./_/g')
 GIT_COMMIT       := $(shell scripts/git-commit.sh)
 GIT_UNCOMMITED   := $(shell git status --porcelain=v1 | wc -l)
-GCP_PROJECT      := $(shell gcloud config list --format="value(core.project)")
 
 CERTS_DIR        := ./certs
 
@@ -33,6 +34,14 @@ $(CERTS_DIR)/client-identity.pem : $(CERTS_DIR)/csr.csr
 $(CERTS_DIR)/client-identity.p12 : $(CERTS_DIR)/client-identity.pem
 	openssl pkcs12 -export -out $@ -inkey $(CERTS_DIR)/private-key.pem -in $<
 
+gcloud-builds :
+ifeq ("", $(GCP_PROJECT))
+	$(error Gcloud project must be set)
+endif
+	gcloud builds submit \
+		--region=europe-west1 \
+		--substitutions=_DOCKER_PREFIX="$(IMAGE_PREFIX)",_DOCKER_VERSION="$(IMAGE_VERSION)",_GIT_COMMIT="$(GIT_COMMIT)"
+
 docker-build :
 	@echo "- Building $(IMAGE_NAME)"
 	docker build --platform linux/amd64 --rm \
@@ -57,14 +66,6 @@ endif
 	@echo "- Pushing $(IMAGE_NAME)"
 	docker push $(IMAGE_NAME)
 
-gcloud-builds :
-ifneq (fp8netes-dev, $(GCP_PROJECT))
-	$(error Gcloud project must be fp8netes-dev but got $(GCP_PROJECT))
-endif
-	gcloud builds submit \
-		--region=europe-west1 \
-		--substitutions=_DOCKER_VERSION="$(IMAGE_VERSION)",_GIT_COMMIT="$(GIT_COMMIT)"
-
 start-request-echo :
 	docker run -p 8080:8080 --rm -t mendhak/http-https-echo:37
 
@@ -74,4 +75,4 @@ clean:
 	rm -rf $(CERTS_DIR)
 	rm -rf ./dist
 
-.PHONY : man setup gcloud-builds start-request-echo clean
+.PHONY : man setup gcloud-builds start-request-echo docker-build docker-run docker-push clean
