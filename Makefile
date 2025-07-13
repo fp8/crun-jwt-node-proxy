@@ -1,5 +1,5 @@
 IMAGE_PREFIX     := europe-west1-docker.pkg.dev/fp8netes-dev/docker
-IMAGE_BASE       := crun-jwt-proxy
+IMAGE_BASE       := crun-jwt-node-proxy
 IMAGE_VERSION    := $(shell node scripts/package-version.js)
 IMAGE_NAME       := $(IMAGE_PREFIX)/$(IMAGE_BASE):$(IMAGE_VERSION)
 

@@ -2530,9 +2530,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"crun-jwt-proxy@workspace:.":
+"crun-jwt-node-proxy@workspace:.":
   version: 0.0.0-use.local
-  resolution: "crun-jwt-proxy@workspace:."
+  resolution: "crun-jwt-node-proxy@workspace:."
   dependencies:
     "@eslint/eslintrc": "npm:^3.2.0"
     "@eslint/js": "npm:^9.18.0"

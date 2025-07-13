@@ -1,11 +1,11 @@
-# crun-jwt-proxy
+# crun-jwt-node-proxy
 
 This project creates a docker image that is to be deployed as a sidecar in a Google
 Cloud Run service to validate Firebase Auth JWT.  The validation is project id specific
 so as long as `GOOGLE_CLOUD_PROJECT` is provided the Firebase Auth JWT should be
 validated correctly.
 
-## ENV needed for proxy service
+## ENV needed for proxy service
 
 Following ends are required for cloud run to work:
 
@@ -160,5 +160,5 @@ Do not commit the changes to the `yarn.lock` file.
 ## Run Container Locally
 
 ```
-docker run --rm -e GOOGLE_CLOUD_PROJECT=fp8netes-dev -it europe-west1-docker.pkg.dev/fp8netes-dev/docker/crun-jwt-proxy:0.1.0
+docker run --rm -e GOOGLE_CLOUD_PROJECT=fp8netes-dev -it europe-west1-docker.pkg.dev/fp8netes-dev/docker/crun-jwt-node-proxy:0.1.0
 ```

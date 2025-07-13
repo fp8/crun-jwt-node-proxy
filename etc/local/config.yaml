@@ -1,4 +1,4 @@
-name: crun-jwt-proxy-local
+name: crun-jwt-node-proxy-local
 port: 8888
 proxy:
   url: https://request-echo-839315814860.europe-west1.run.app

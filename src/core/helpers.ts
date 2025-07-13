@@ -97,7 +97,7 @@ export async function fetch(
       path: parsedUrl.pathname + parsedUrl.search,
       method: 'GET',
       headers: {
-        'User-Agent': '@fp8/crun-jwt-proxy',
+        'User-Agent': '@fp8/crun-jwt-node-proxy',
         ...headers, // Merge additional headers
       },
       timeout: 5000, // 5 seconds timeout (increased for HTTPS)

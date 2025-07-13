@@ -1,4 +1,4 @@
-name: crun-jwt-proxy
+name: crun-jwt-node-proxy
 port: 8888
 proxy:
   url: http://localhost:8080

@@ -26,7 +26,7 @@ describe('createConfigStore', () => {
     expect(jwtConfig).toBeInstanceOf(JwtConfig);
 
     // The name is sourced from the etc/utest/config.json file
-    expect(configData.name).toEqual('crun-jwt-proxy-utest');
+    expect(configData.name).toEqual('crun-jwt-node-proxy-utest');
   });
 
   it('jwt filter', () => {
