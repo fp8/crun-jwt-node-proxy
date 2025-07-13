@@ -1,0 +1,14 @@
+name: crun-jwt-proxy-local
+port: 8888
+proxy:
+  url: https://request-echo-839315814860.europe-west1.run.app
+  certPath: ./certs/client-identity.p12
+jwt:
+  issuer: https://securetoken.google.com/{{ENV.GOOGLE_CLOUD_PROJECT}}
+  audience: "{{ENV.GOOGLE_CLOUD_PROJECT}}"
+  authHeaderPrefix: "X-AUTH-"
+  filter:
+    email: /farport.co$/
+  mapper:
+    sub: X-AUTH-USERID
+    email: X-AUTH-EMAIL

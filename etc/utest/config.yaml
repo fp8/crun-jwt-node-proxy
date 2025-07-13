@@ -1,0 +1,15 @@
+name: crun-jwt-proxy-utest
+port: 8888
+proxy:
+  url: https://request-echo-839315814860.europe-west1.run.app
+  certPath: ./certs/client-identity.p12
+jwt:
+  issuer: https://securetoken.google.com/{{ENV.GOOGLE_CLOUD_PROJECT}}
+  audience: "{{ENV.GOOGLE_CLOUD_PROJECT}}"
+  clockTolerance: 33
+  authHeaderPrefix: "X-AUTH-"
+  filter:
+    email: /test\.com$/
+  mapper:
+    sub: X-AUTH-USERID
+    email: X-AUTH-EMAIL

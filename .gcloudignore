@@ -1,0 +1,15 @@
+# Ignore everything
+*
+
+# Except the Cloud Function files we want to deploy
+!.yarnrc.yml
+!Dockerfile
+!etc/**
+!package.json
+!src/**
+!tsconfig.build.json
+!tsconfig.json
+!yarn.lock
+
+etc/local*/
+etc/utest/

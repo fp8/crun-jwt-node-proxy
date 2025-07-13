@@ -1,0 +1,20 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - 'build'
+      - '-t'
+      - '${_DOCKER_PREFIX}/${_DOCKER_BASE}:${_DOCKER_VERSION}'
+      - '.'
+      - '--build-arg'
+      - 'version=${_DOCKER_VERSION}'
+      - '--build-arg'
+      - 'git_commit=${_GIT_COMMIT}'
+
+substitutions:
+  _DOCKER_PREFIX: 'europe-west1-docker.pkg.dev/fp8netes-dev/docker'
+  _DOCKER_BASE: 'crun-jwt-proxy'
+  _DOCKER_VERSION: '0.0.0' # To be overriden by command line
+  _GIT_COMMIT: '' # To be overriden by command line
+
+images:
+  - '${_DOCKER_PREFIX}/${_DOCKER_BASE}:${_DOCKER_VERSION}'
