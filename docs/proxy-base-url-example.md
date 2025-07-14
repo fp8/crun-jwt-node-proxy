@@ -62,8 +62,11 @@ Outgoing: GET https://request-echo-839315814860.europe-west1.run.app/
 ```
 Incoming: GET http://localhost:8888/health
 ↓ JWT validation and header processing
-↓ URL rewriting: No match, pass through unchanged  
-Outgoing: GET https://request-echo-839315814860.europe-west1.run.app/health
+↓ URL rewriting: No match, throw error
+{
+    "error": "Bad Request",
+    "message": "Request URL /health does not match proxy base URL /api/candidates"
+}
 ```
 
 ## Environment Variable Override

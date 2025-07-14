@@ -177,7 +177,7 @@ export PROXY_BASE_URL=/different/api/path
 ```
 
 **Edge Cases:**
-- If the incoming URL doesn't match the `proxyBaseUrl`, it's forwarded unchanged
+- If the incoming URL doesn't match the `proxyBaseUrl`, a bad request error will be thrown
 - Query parameters and fragments are preserved during rewriting
 - Exact matches (e.g., `/api/candidates`) are rewritten to the root path (`/`)
 
