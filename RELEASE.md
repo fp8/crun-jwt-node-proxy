@@ -1,5 +1,9 @@
 # Typescript Starter Project Release Note
 
+## 0.4.0 [2025-07-14]
+
+* Added support for `ProxyConfig.proxyBaseUrl` and `PROXY_BASE_URL` that will be removed before proxied
+
 ## 0.3.0 [2025-07-13]
 
 * Added support to retrive Google Cloud Project ID from metadata server

@@ -76,7 +76,9 @@ export function createProxyServer(config: ConfigData): http.Server {
         const errorMessage = `Request URL ${req.url} does not match proxy base URL ${proxyBaseUrl}`;
         logger.warn(errorMessage);
         res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Bad Request', message: errorMessage }));
+        res.end(
+          JSON.stringify({ error: 'Bad Request', message: errorMessage }),
+        );
         return;
       }
     }

@@ -194,12 +194,15 @@ describe('Proxy Base URL Rewriting', () => {
       await requestListener(mockRequest, mockResponse);
 
       // Should return 400 error response
-      expect(mockResponse.writeHead).toHaveBeenCalledWith(400, { 'Content-Type': 'application/json' });
+      expect(mockResponse.writeHead).toHaveBeenCalledWith(400, {
+        'Content-Type': 'application/json',
+      });
       expect(mockResponse.end).toHaveBeenCalledWith(
-        JSON.stringify({ 
-          error: 'Bad Request', 
-          message: 'Request URL /different/path/123 does not match proxy base URL /api/candidates' 
-        })
+        JSON.stringify({
+          error: 'Bad Request',
+          message:
+            'Request URL /different/path/123 does not match proxy base URL /api/candidates',
+        }),
       );
       // Proxy should not be called
       expect(mockProxy.web).not.toHaveBeenCalled();
