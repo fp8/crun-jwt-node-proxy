@@ -10,7 +10,7 @@ import { JwtService } from './services/jwt.service';
 
 export const logger = createLogger();
 
-function createProxyServer(config: ConfigData): http.Server {
+export function createProxyServer(config: ConfigData): http.Server {
   const jwtService = new JwtService(config.jwt);
 
   // Create a proxy server with custom application logic
@@ -59,6 +59,30 @@ function createProxyServer(config: ConfigData): http.Server {
         logger.warn(`Skipping undefined header for key: ${key}`);
       }
     }
+
+    // Handle proxy base URL rewriting
+    const proxyBaseUrl = config.getProxyBaseUrl();
+    if (proxyBaseUrl && req.url) {
+      // Remove the base URL prefix from the incoming request URL
+      const baseUrlPattern = proxyBaseUrl.endsWith('/')
+        ? proxyBaseUrl.slice(0, -1)
+        : proxyBaseUrl;
+
+      if (req.url.startsWith(baseUrlPattern)) {
+        const originalUrl = req.url;
+        req.url = req.url.substring(baseUrlPattern.length) || '/';
+        logger.debug(`URL rewrite: ${originalUrl} -> ${req.url}`);
+      } else {
+        const errorMessage = `Request URL ${req.url} does not match proxy base URL ${proxyBaseUrl}`;
+        logger.warn(errorMessage);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({ error: 'Bad Request', message: errorMessage }),
+        );
+        return;
+      }
+    }
+
     proxy.web(req, res);
   });
 

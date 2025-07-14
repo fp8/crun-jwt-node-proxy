@@ -15,6 +15,7 @@ import {
 import { createLogger } from '../core/logger';
 
 import { IsMapperKeysValid } from './validators';
+import { isEmpty } from 'jlog-facade';
 
 const logger = createLogger('config.dto');
 
@@ -52,6 +53,10 @@ export class ProxyConfig {
 
   @IsOptional()
   @IsString()
+  proxyBaseUrl?: string;
+
+  @IsOptional()
+  @IsString()
   certPath?: string;
 
   @IsOptional()
@@ -84,7 +89,7 @@ export class ConfigData {
     }
   }
 
-  getProxyTarget(): ProxyTarget {
+  public getProxyTarget(): ProxyTarget {
     const url = getProxyURL(this.proxy);
 
     // If port is not specified in the URL, use default ports based on protocol
@@ -114,6 +119,13 @@ export class ConfigData {
 
     logger.debug(`Proxy target: ${JSON.stringify(output)}`);
     return output;
+  }
+
+  public getProxyBaseUrl(): string | undefined {
+    if (!isEmpty(process.env.PROXY_BASE_URL)) {
+      return process.env.PROXY_BASE_URL;
+    }
+    return this.proxy.proxyBaseUrl;
   }
 }
 
