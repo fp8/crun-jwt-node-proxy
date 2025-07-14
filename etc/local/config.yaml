@@ -2,6 +2,7 @@ name: crun-jwt-node-proxy-local
 port: 8888
 proxy:
   url: https://request-echo-839315814860.europe-west1.run.app
+  proxyBaseUrl: /api
   certPath: ./certs/client-identity.p12
 jwt:
   issuer: https://securetoken.google.com/{{ENV.GOOGLE_CLOUD_PROJECT}}

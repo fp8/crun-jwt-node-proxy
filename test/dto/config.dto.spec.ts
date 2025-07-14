@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { validate } from 'class-validator';
-import { JwtConfig } from '../../src/dto/config.dto';
+import { JwtConfig, ConfigData, ProxyConfig } from '../../src/dto/config.dto';
 
 describe('JwtConfig', () => {
   describe('mapper validation', () => {
@@ -96,6 +96,87 @@ describe('JwtConfig', () => {
 
       const errors = await validate(config);
       expect(errors).toHaveLength(0);
+    });
+  });
+});
+
+describe('ConfigData', () => {
+  describe('getProxyBaseUrl', () => {
+    let configData: ConfigData;
+    let proxyConfig: ProxyConfig;
+    let jwtConfig: JwtConfig;
+
+    beforeEach(() => {
+      // Setup basic configuration
+      proxyConfig = new ProxyConfig();
+      proxyConfig.url = 'http://localhost:8080';
+
+      jwtConfig = new JwtConfig();
+      jwtConfig.issuer = 'test-issuer';
+      jwtConfig.authHeaderPrefix = 'X-AUTH-';
+      jwtConfig.mapper = {};
+
+      configData = new ConfigData();
+      configData.name = 'test-config';
+      configData.port = 8888;
+      configData.proxy = proxyConfig;
+      configData.jwt = jwtConfig;
+    });
+
+    afterEach(() => {
+      // Clean up environment variables
+      delete process.env.PROXY_BASE_URL;
+    });
+
+    it('should return proxyBaseUrl from config when no environment variable is set', () => {
+      proxyConfig.proxyBaseUrl = '/api/candidates';
+
+      const result = configData.getProxyBaseUrl();
+
+      expect(result).toBe('/api/candidates');
+    });
+
+    it('should return environment variable when PROXY_BASE_URL is set', () => {
+      proxyConfig.proxyBaseUrl = '/api/candidates';
+      process.env.PROXY_BASE_URL = '/env/api';
+
+      const result = configData.getProxyBaseUrl();
+
+      expect(result).toBe('/env/api');
+    });
+
+    it('should return undefined when proxyBaseUrl is not configured and no environment variable', () => {
+      // proxyBaseUrl is undefined by default
+
+      const result = configData.getProxyBaseUrl();
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should return environment variable even when config proxyBaseUrl is undefined', () => {
+      // proxyBaseUrl is undefined by default
+      process.env.PROXY_BASE_URL = '/env/only';
+
+      const result = configData.getProxyBaseUrl();
+
+      expect(result).toBe('/env/only');
+    });
+
+    it('should handle empty string environment variable', () => {
+      proxyConfig.proxyBaseUrl = '/api/candidates';
+      process.env.PROXY_BASE_URL = '';
+
+      const result = configData.getProxyBaseUrl();
+
+      expect(result).toBe('/api/candidates');
+    });
+
+    it('should handle empty string config value', () => {
+      proxyConfig.proxyBaseUrl = '';
+
+      const result = configData.getProxyBaseUrl();
+
+      expect(result).toBe('');
     });
   });
 });

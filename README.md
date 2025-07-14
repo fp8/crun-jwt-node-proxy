@@ -12,6 +12,7 @@ Following ends are required for cloud run to work:
 * `GOOGLE_CLOUD_PROJECT`: GCloud projectId to use and must set in local dev.  If not set, attempt
   to obtain this info from the metadata server.
 * `PROXY_TARGET`: The url of target project. Defaults to `http://localhost:8080`
+* `PROXY_BASE_URL`: Set the url that proxy will listen to but removed before forwarding to `PROXY_TARGET`
 * `PORT`: The port that proxy should be listening.  Defaults to `8888`
 * `NODE_ENV`: When this is set to `PRODUCTION`, `GCloudDestination` will be used
 
@@ -130,6 +131,55 @@ jwt:
     email: X-AUTH-EMAIL
     roles: X-AUTH-ROLES      # Forward all roles as comma-separated list
 ```
+
+### Proxy Configuration
+
+The `proxy` section configures the target service and URL rewriting behavior:
+
+```yaml
+proxy:
+  url: http://localhost:8080        # Target service URL
+  proxyBaseUrl: /api/candidates     # Optional: Base URL to strip from incoming requests
+  certPath: ./certs/client.p12      # Optional: Client certificate for HTTPS
+  passphrase: secret123             # Optional: Certificate passphrase
+```
+
+#### Proxy Properties
+
+- **url**: The target service URL where requests will be forwarded
+- **proxyBaseUrl** (optional): Base URL path that will be stripped from incoming requests before forwarding
+- **certPath** (optional): Path to client certificate file for mutual TLS authentication
+- **passphrase** (optional): Passphrase for the client certificate
+
+#### URL Rewriting with proxyBaseUrl
+
+The `proxyBaseUrl` feature allows you to expose your service under a different path prefix. When configured, the proxy will:
+
+1. **Validate** that incoming requests start with the specified base URL
+2. **Strip** the base URL prefix from the request before forwarding
+3. **Forward** the modified request to the target service
+
+**Example:**
+```yaml
+proxy:
+  url: http://localhost:8080
+  proxyBaseUrl: /api/candidates
+```
+
+With this configuration:
+- Incoming: `GET http://proxy:8888/api/candidates/italy/123`
+- Forwarded: `GET http://localhost:8080/italy/123`
+
+**Environment Variable Override:**
+You can override the `proxyBaseUrl` using the `PROXY_BASE_URL` environment variable:
+```bash
+export PROXY_BASE_URL=/different/api/path
+```
+
+**Edge Cases:**
+- If the incoming URL doesn't match the `proxyBaseUrl`, it's forwarded unchanged
+- Query parameters and fragments are preserved during rewriting
+- Exact matches (e.g., `/api/candidates`) are rewritten to the root path (`/`)
 
 # Local Dev
 
