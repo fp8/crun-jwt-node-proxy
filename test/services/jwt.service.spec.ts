@@ -200,9 +200,15 @@ describe('JwtService', () => {
       );
 
       const jwt = loadTextFile('jwt/jwt-iam.txt');
+      const publicKey = getPublicKey(
+        'jwt/jwt-iam-jwks.json',
+        '8e8fc8e556f7a76d08d35829d6f90ae2e12cfd0d',
+      );
+
       // Using signature-only validation since the token is expired
       const claims = await iamJwtService.validateToken(jwt, {
         signatureOnly: true,
+        publicKey
       });
       expect(claims).toBeDefined();
       expect(claims.sub).toBe('114789851119851077143');
