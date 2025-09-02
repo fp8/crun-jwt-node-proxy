@@ -2,6 +2,11 @@ import '../testlib';
 
 import * as http from 'http';
 import { ConfigData, ProxyConfig, JwtConfig } from '../../src/dto/config.dto';
+import {
+  secretValidation,
+  authenticaJwtOrSecretFromAuthorizationHeader,
+} from '../../src/services/proxy.service';
+import { UnauthorizedError } from '../../src/core';
 
 // Mock the logger to avoid actual logging during tests
 jest.mock('../../src/core/logger', () => ({
@@ -346,6 +351,245 @@ describe('Proxy Base URL Rewriting', () => {
       // Verify URL was rewritten
       expect(mockRequest.url).toBe('/italy/123');
       expect(mockProxy.web).toHaveBeenCalledWith(mockRequest, mockResponse);
+    });
+  });
+});
+
+describe('Secret Token Validation', () => {
+  let config: ConfigData;
+
+  beforeEach(() => {
+    // Reset all mocks
+    jest.clearAllMocks();
+
+    // Create test configuration with secret token
+    const proxyConfig = new ProxyConfig();
+    proxyConfig.url = 'http://localhost:8080';
+    proxyConfig.secretToken = 'Cc0UxRJyN0'; // Same as in utest config
+
+    const jwtConfig = new JwtConfig();
+    jwtConfig.issuer = 'https://securetoken.google.com/test-project';
+    jwtConfig.audience = 'test-project';
+    jwtConfig.authHeaderPrefix = 'X-AUTH-';
+    jwtConfig.mapper = {};
+
+    config = new ConfigData();
+    config.name = 'test-proxy';
+    config.port = 8888;
+    config.proxy = proxyConfig;
+    config.jwt = jwtConfig;
+  });
+
+  describe('secretValidation function', () => {
+    it('should return valid JWT claim when token matches secret', () => {
+      const token = 'Cc0UxRJyN0';
+      const result = secretValidation(token, config);
+
+      expect(result).toBeDefined();
+      expect(result?.sub).toBe('crun-jwt-auth-secret');
+      expect(result?.email).toBe('crun-jwt-auth-secret@farport.co');
+      expect(result?.iss).toBe('https://securetoken.google.com/test-project');
+      expect(result?.aud).toBe('test-project');
+      expect(result?.iat).toBeCloseTo(Math.floor(Date.now() / 1000), 1);
+      expect(result?.exp).toBeCloseTo(Math.floor(Date.now() / 1000) + 3600, 1);
+    });
+
+    it('should return undefined when token does not match secret', () => {
+      const token = 'invalid-token';
+      const result = secretValidation(token, config);
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should return undefined when token is undefined', () => {
+      const result = secretValidation(undefined as any, config);
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should return undefined when token is empty string', () => {
+      const result = secretValidation('', config);
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should return undefined when secretToken is not configured', () => {
+      // Remove secret token from config
+      config.proxy.secretToken = undefined;
+      const token = 'Cc0UxRJyN0';
+      const result = secretValidation(token, config);
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should return undefined when secretToken is empty string', () => {
+      // Set secret token to empty string
+      config.proxy.secretToken = '';
+      const token = 'Cc0UxRJyN0';
+      const result = secretValidation(token, config);
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should return claims with correct expiration time (1 hour from now)', () => {
+      const token = 'Cc0UxRJyN0';
+      const beforeCall = Math.floor(Date.now() / 1000);
+      const result = secretValidation(token, config);
+      const afterCall = Math.floor(Date.now() / 1000);
+
+      expect(result).toBeDefined();
+      expect(result?.iat).toBeGreaterThanOrEqual(beforeCall);
+      expect(result?.iat).toBeLessThanOrEqual(afterCall);
+      expect(result?.exp).toBe(result?.iat! + 3600);
+    });
+  });
+
+  describe('validateAuthentication with secret token', () => {
+    let mockRequest: Partial<http.IncomingMessage>;
+    let jwtService: any;
+
+    beforeEach(() => {
+      // Create a mock JWT service
+      jwtService = {
+        validateToken: jest.fn(),
+        mapClaims: jest.fn(),
+      };
+
+      // Setup mock request
+      mockRequest = {
+        headers: {},
+        method: 'GET',
+      };
+    });
+
+    it('should authenticate using secret token and bypass JWT validation', async () => {
+      mockRequest.headers!['authorization'] = 'Bearer Cc0UxRJyN0';
+
+      const result = await authenticaJwtOrSecretFromAuthorizationHeader(
+        mockRequest as http.IncomingMessage,
+        config,
+        jwtService,
+      );
+
+      expect(result).toBeDefined();
+      expect(result.sub).toBe('crun-jwt-auth-secret');
+      expect(result.email).toBe('crun-jwt-auth-secret@farport.co');
+
+      // JWT service should not be called when secret authentication succeeds
+      expect(jwtService.validateToken).not.toHaveBeenCalled();
+    });
+
+    it('should fall back to JWT validation when secret token does not match', async () => {
+      mockRequest.headers!['authorization'] = 'Bearer invalid-token';
+
+      // Mock JWT validation to succeed
+      const jwtClaims = {
+        sub: 'user123',
+        email: 'user@example.com',
+        iss: 'test-issuer',
+        aud: 'test-audience',
+        exp: Date.now() / 1000 + 3600,
+        iat: Date.now() / 1000,
+      };
+      jwtService.validateToken.mockResolvedValue(jwtClaims);
+
+      const result = await authenticaJwtOrSecretFromAuthorizationHeader(
+        mockRequest as http.IncomingMessage,
+        config,
+        jwtService,
+      );
+
+      expect(result).toBe(jwtClaims);
+      expect(jwtService.validateToken).toHaveBeenCalledWith('invalid-token');
+    });
+
+    it('should throw UnauthorizedError when authorization header is missing', async () => {
+      // No authorization header
+      mockRequest.headers = {};
+
+      await expect(
+        authenticaJwtOrSecretFromAuthorizationHeader(
+          mockRequest as http.IncomingMessage,
+          config,
+          jwtService,
+        ),
+      ).rejects.toThrow(UnauthorizedError);
+    });
+
+    it('should throw UnauthorizedError when token is empty', async () => {
+      mockRequest.headers!['authorization'] = 'Bearer ';
+
+      await expect(
+        authenticaJwtOrSecretFromAuthorizationHeader(
+          mockRequest as http.IncomingMessage,
+          config,
+          jwtService,
+        ),
+      ).rejects.toThrow(UnauthorizedError);
+    });
+
+    it('should throw UnauthorizedError when JWT validation fails and secret does not match', async () => {
+      mockRequest.headers!['authorization'] = 'Bearer invalid-jwt-token';
+
+      // Mock JWT validation to fail
+      jwtService.validateToken.mockRejectedValue(new Error('Invalid JWT'));
+
+      await expect(
+        authenticaJwtOrSecretFromAuthorizationHeader(
+          mockRequest as http.IncomingMessage,
+          config,
+          jwtService,
+        ),
+      ).rejects.toThrow(UnauthorizedError);
+    });
+  });
+
+  describe('Integration test with proxy server using secret token', () => {
+    it('should successfully proxy request when using valid secret token', async () => {
+      const mockRequest: Partial<http.IncomingMessage> = {
+        headers: {
+          authorization: 'Bearer Cc0UxRJyN0', // Valid secret token
+        },
+        url: '/api/test',
+        method: 'GET',
+      };
+
+      const mockResponse: Partial<http.ServerResponse> = {
+        writeHead: jest.fn(),
+        end: jest.fn(),
+      };
+
+      // Clear any previous mocks for this test
+      jest.clearAllMocks();
+
+      // Ensure mapClaims returns a valid object
+      mockJwtService.mapClaims.mockReturnValue({});
+
+      const { createProxyServer } = await import(
+        '../../src/services/proxy.service'
+      );
+
+      jest.spyOn(config, 'getProxyTarget').mockReturnValue({
+        host: 'localhost',
+        port: 8080,
+        protocol: 'http:',
+      });
+
+      const server = createProxyServer(config);
+      const requestListener = (server as any).listeners('request')[0];
+
+      await requestListener(mockRequest, mockResponse);
+
+      // Should successfully proxy the request
+      expect(mockProxy.web).toHaveBeenCalledWith(mockRequest, mockResponse);
+      expect(mockResponse.writeHead).not.toHaveBeenCalled(); // No error response
+      expect(mockResponse.end).not.toHaveBeenCalled(); // No error response
+
+      // JWT service should not be called since secret authentication succeeded
+      expect(mockJwtService.validateToken).not.toHaveBeenCalled();
+
+      // mapClaims should still be called with the secret claims
+      expect(mockJwtService.mapClaims).toHaveBeenCalled();
     });
   });
 });

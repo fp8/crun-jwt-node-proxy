@@ -48,7 +48,11 @@ export function createError(
   } else {
     // Is message is not a string, ignore the error param
     if (message instanceof Error) {
-      return message;
+      if (options?.type) {
+        return new errorType(message.message, { cause: message });
+      } else {
+        return message;
+      }
     } else {
       return new errorType(`Unknown error ${message}`);
     }

@@ -47,10 +47,9 @@ export function createProxyServer(config: ConfigData): http.Server {
 }
 
 /**
- * Server request processor
+ * Callback to be used for validating incoming requests
  *
  * @param req
- * @param res
  * @param config
  * @param jwtService
  */
@@ -59,21 +58,8 @@ async function requestProcessor(
   config: ConfigData,
   jwtService: JwtService,
 ) {
-  let claims: IJwtClaim;
-
-  try {
-    const token = req.headers['authorization']?.split(' ')[1];
-    // ToDo: Add secrets check here
-
-    claims = await jwtService.validateToken(token);
-  } catch (err) {
-    // Throw an unauthorized error
-    const error = createError('Failed to decode JWT:', {
-      cause: err,
-      type: UnauthorizedError,
-    });
-    throw error;
-  }
+  // Make sure that request authorization header can be authenticated
+  const claims = await authenticaJwtOrSecretFromAuthorizationHeader(req, config, jwtService);
 
   // Remove all incoming headers with the configured prefix
   removeAllIncomingAuthHeaders(config, req);
@@ -95,13 +81,19 @@ async function requestProcessor(
 }
 
 /**
- * Validate the auth header against the secret
+ * PRIVATE - export for testing purposes only
+ * 
+ * Validate the secret token and used only by
+ * authenticaJwtOrSecretFromAuthorizationHeader function
  *
- * @param token 
- * @param config 
- * @returns 
+ * @param token
+ * @param config
+ * @returns
  */
-export function secretValidation(token: string, config: ConfigData): IJwtClaim | undefined {
+export function secretValidation(
+  token: string,
+  config: ConfigData,
+): IJwtClaim | undefined {
   const secretToken = config.proxy.secretToken;
   if (token && secretToken && token === secretToken) {
     // Seconds from Epoch
@@ -121,10 +113,20 @@ export function secretValidation(token: string, config: ConfigData): IJwtClaim |
   }
 }
 
-export async function validateAuthentication(
+/**
+ * PRIVATE - export for testing purposes only
+ *
+ * Validate the incoming request's authentication
+ *
+ * @param req - The incoming HTTP request
+ * @param config - The configuration data
+ * @param jwtService - The JWT service instance
+ * @returns The validated JWT claims
+ */
+export async function authenticaJwtOrSecretFromAuthorizationHeader(
   req: http.IncomingMessage,
   config: ConfigData,
-  jwtService: JwtService
+  jwtService: JwtService,
 ): Promise<IJwtClaim> {
   const token = req.headers['authorization']?.split(' ')[1];
 
@@ -134,22 +136,29 @@ export async function validateAuthentication(
   }
 
   // Validate the token against the secret if configured
-  let claims = secretValidation(token, config);
-  if (claims) {
+  const claimsSecret = secretValidation(token, config);
+  if (claimsSecret) {
     logger.info('Request authenticated using secret token');
-    return claims;
+    return claimsSecret;
   }
 
   // Perform JWT validation
   try {
-    const claims = await jwtService.validateToken(token);
-    return claims;
+    return await jwtService.validateToken(token);
   } catch (err) {
-    // Throw an unauthorized error
-    const error = createError('Failed to validate JWT:', {
-      cause: err,
-      type: UnauthorizedError,
-    });
+    let error: Error | undefined = undefined;
+    if (err instanceof Error) {
+      if (err.message.startsWith('JWT validation failed:')) {
+        error = createError(err, { type: UnauthorizedError});
+      }
+    }
+    if (error === undefined) {
+      error = createError('Failed to validate JWT:', {
+        cause: err,
+        type: UnauthorizedError,
+      });
+    }
+
     throw error;
   }
 }
@@ -160,7 +169,7 @@ export async function validateAuthentication(
  * @param config
  * @param req
  */
-export function removeAllIncomingAuthHeaders(
+function removeAllIncomingAuthHeaders(
   config: ConfigData,
   req: http.IncomingMessage,
 ): void {
@@ -185,7 +194,7 @@ export function removeAllIncomingAuthHeaders(
  * @param proxyBaseUrl
  * @param req
  */
-export function rewriteBaseUrlByStrippingBaseUrl(
+function rewriteBaseUrlByStrippingBaseUrl(
   req: http.IncomingMessage,
   proxyBaseUrl?: string,
 ): void {
@@ -214,7 +223,7 @@ export function rewriteBaseUrlByStrippingBaseUrl(
  * @param error - The error that occurred
  * @param res - The HTTP response object
  */
-export function errorHandler(error: unknown, res: http.ServerResponse) {
+function errorHandler(error: unknown, res: http.ServerResponse) {
   let status: number;
   let message: string;
   let errorName: string;
