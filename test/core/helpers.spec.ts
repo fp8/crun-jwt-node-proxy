@@ -57,7 +57,7 @@ describe('helpers', () => {
     it('should create error with string message and cause', () => {
       const message = 'Test error message';
       const cause = new Error('Original error');
-      const error = createError(message, cause);
+      const error = createError(message, { cause });
       expect(error).toBeInstanceOf(Error);
       expect(error.message).toBe(message);
       expect(error.cause).toBe(cause);

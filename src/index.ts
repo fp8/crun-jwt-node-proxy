@@ -11,7 +11,6 @@ const logger = createLogger();
 // Start measuring startup time
 const start = process.hrtime();
 
-
 /**
  * Handles the SIGINT and SIGTERM signal to gracefully shut down the application.
  */
@@ -35,9 +34,11 @@ function handleSigint(server: http.Server): void {
  */
 async function main(): Promise<void> {
   const config = await getConfigData();
+
+  // Create the proxy server
   const server = createProxyServer(config);
 
-  // response to SIGINT and SIGTERM 
+  // response to SIGINT and SIGTERM
   handleSigint(server);
 
   // Start the server
@@ -51,7 +52,9 @@ main()
   .then(() => {
     const end = process.hrtime(start);
     const duration = end[0] * 1e3 + end[1] * 1e-6;
-    logger.info(`Proxy server started successfully in ${duration.toFixed(2)} ms`);
+    logger.info(
+      `Proxy server started successfully in ${duration.toFixed(2)} ms`,
+    );
   })
   .catch((err) => {
     logger.error(`Failed to start proxy server: ${err.message}`);

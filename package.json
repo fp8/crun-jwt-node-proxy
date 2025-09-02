@@ -15,8 +15,8 @@
     "lint:ts": "eslint \"{src,test}/**/*.ts\" --fix",
     "lint": "yarn lint:ts && yarn lint:format",
     "test:unit": "FP8_ENV=utest jest --config ./jest.config.ts",
-    "test:debug": "FP8_ENV=utest jest --config ./jest.config.ts --runInBand --bail",
-    "test": "yarn test:unit",
+    "utest": "yarn test:unit --runInBand --bail",
+    "test": "yarn test:unit --coverage",
     "start": "ts-node --project tsconfig.json -r tsconfig-paths/register src"
   },
   "devDependencies": {

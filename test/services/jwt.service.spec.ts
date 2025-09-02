@@ -208,7 +208,7 @@ describe('JwtService', () => {
       // Using signature-only validation since the token is expired
       const claims = await iamJwtService.validateToken(jwt, {
         signatureOnly: true,
-        publicKey
+        publicKey,
       });
       expect(claims).toBeDefined();
       expect(claims.sub).toBe('114789851119851077143');

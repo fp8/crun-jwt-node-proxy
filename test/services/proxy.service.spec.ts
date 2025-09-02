@@ -1,6 +1,6 @@
-import 'reflect-metadata';
+import '../testlib';
+
 import * as http from 'http';
-import * as httpProxy from 'http-proxy';
 import { ConfigData, ProxyConfig, JwtConfig } from '../../src/dto/config.dto';
 
 // Mock the logger to avoid actual logging during tests
@@ -88,7 +88,9 @@ describe('Proxy Base URL Rewriting', () => {
   describe('URL rewriting with proxyBaseUrl', () => {
     it('should rewrite URL by removing proxy base URL prefix', async () => {
       // Import and create the proxy server after mocks are set up
-      const { createProxyServer } = await import('../../src/services/proxy.service');
+      const { createProxyServer } = await import(
+        '../../src/services/proxy.service'
+      );
 
       // Mock config.getProxyBaseUrl() to return the base URL
       jest.spyOn(config, 'getProxyBaseUrl').mockReturnValue('/api/candidates');
@@ -112,7 +114,9 @@ describe('Proxy Base URL Rewriting', () => {
     it('should handle URL rewriting when base URL has trailing slash', async () => {
       mockRequest.url = '/api/candidates/italy/123';
 
-      const { createProxyServer } = await import('../../src/services/proxy.service');
+      const { createProxyServer } = await import(
+        '../../src/services/proxy.service'
+      );
 
       // Mock config with trailing slash
       jest.spyOn(config, 'getProxyBaseUrl').mockReturnValue('/api/candidates/');
@@ -135,7 +139,9 @@ describe('Proxy Base URL Rewriting', () => {
     it('should rewrite to root path when URL exactly matches base URL', async () => {
       mockRequest.url = '/api/candidates';
 
-      const { createProxyServer } = await import('../../src/services/proxy.service');
+      const { createProxyServer } = await import(
+        '../../src/services/proxy.service'
+      );
 
       jest.spyOn(config, 'getProxyBaseUrl').mockReturnValue('/api/candidates');
       jest.spyOn(config, 'getProxyTarget').mockReturnValue({
@@ -157,7 +163,9 @@ describe('Proxy Base URL Rewriting', () => {
     it('should handle query parameters correctly during rewriting', async () => {
       mockRequest.url = '/api/candidates/search?name=john&age=30';
 
-      const { createProxyServer } = await import('../../src/services/proxy.service');
+      const { createProxyServer } = await import(
+        '../../src/services/proxy.service'
+      );
 
       jest.spyOn(config, 'getProxyBaseUrl').mockReturnValue('/api/candidates');
       jest.spyOn(config, 'getProxyTarget').mockReturnValue({
@@ -179,7 +187,9 @@ describe('Proxy Base URL Rewriting', () => {
     it('should throw error when URL does not match proxy base URL', async () => {
       mockRequest.url = '/different/path/123';
 
-      const { createProxyServer } = await import('../../src/services/proxy.service');
+      const { createProxyServer } = await import(
+        '../../src/services/proxy.service'
+      );
 
       jest.spyOn(config, 'getProxyBaseUrl').mockReturnValue('/api/candidates');
       jest.spyOn(config, 'getProxyTarget').mockReturnValue({
@@ -199,7 +209,8 @@ describe('Proxy Base URL Rewriting', () => {
       });
       expect(mockResponse.end).toHaveBeenCalledWith(
         JSON.stringify({
-          error: 'Bad Request',
+          success: false,
+          error: 'BadRequestError',
           message:
             'Request URL /different/path/123 does not match proxy base URL /api/candidates',
         }),
@@ -212,7 +223,9 @@ describe('Proxy Base URL Rewriting', () => {
       const originalUrl = '/api/candidates/italy/123';
       mockRequest.url = originalUrl;
 
-      const { createProxyServer } = await import('../../src/services/proxy.service');
+      const { createProxyServer } = await import(
+        '../../src/services/proxy.service'
+      );
 
       // Mock config without proxy base URL
       jest.spyOn(config, 'getProxyBaseUrl').mockReturnValue(undefined);
@@ -236,7 +249,9 @@ describe('Proxy Base URL Rewriting', () => {
       const originalUrl = '/api/candidates/italy/123';
       mockRequest.url = originalUrl;
 
-      const { createProxyServer } = await import('../../src/services/proxy.service');
+      const { createProxyServer } = await import(
+        '../../src/services/proxy.service'
+      );
 
       // Mock config with empty string base URL
       jest.spyOn(config, 'getProxyBaseUrl').mockReturnValue('');
@@ -263,7 +278,9 @@ describe('Proxy Base URL Rewriting', () => {
       process.env.PROXY_BASE_URL = '/env/api';
       mockRequest.url = '/env/api/users/123';
 
-      const { createProxyServer } = await import('../../src/services/proxy.service');
+      const { createProxyServer } = await import(
+        '../../src/services/proxy.service'
+      );
 
       // Even though config has different base URL, env should take precedence
       jest.spyOn(config, 'getProxyTarget').mockReturnValue({
@@ -293,7 +310,9 @@ describe('Proxy Base URL Rewriting', () => {
         'x-auth-existing': 'old-value',
       };
 
-      const { createProxyServer } = await import('../../src/services/proxy.service');
+      const { createProxyServer } = await import(
+        '../../src/services/proxy.service'
+      );
 
       // Mock JWT service to return mapped headers
       mockJwtService.mapClaims.mockReturnValue({

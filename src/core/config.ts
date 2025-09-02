@@ -30,7 +30,7 @@ export async function prepareProjectEnv(): Promise<void> {
       if (error.message.includes('ENOTFOUND metadata.google.internal')) {
         const message =
           'When runnning outside of Google Cloud, you must set the GOOGLE_CLOUD_PROJECT environment variable. [ENOTFOUND metadata.google.internal]';
-        throw createError(message, err);
+        throw createError(message, { cause: err });
       } else {
         throw err;
       }
