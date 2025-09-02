@@ -8,10 +8,12 @@ import {
   HttpError,
   IJwtClaim,
   InternalServerError,
+  UnauthorizedError,
 } from '../core';
 import { ConfigData } from '../dto/config.dto';
 import { JwtService } from '../services/jwt.service';
 
+const DEFAULT_SUB_FOR_SECRET_AUTH = 'crun-jwt-auth-secret';
 const logger = createLogger('proxy.service');
 
 /**
@@ -65,15 +67,16 @@ async function requestProcessor(
 
     claims = await jwtService.validateToken(token);
   } catch (err) {
+    // Throw an unauthorized error
     const error = createError('Failed to decode JWT:', {
       cause: err,
-      type: InternalServerError,
+      type: UnauthorizedError,
     });
     throw error;
   }
 
   // Remove all incoming headers with the configured prefix
-  removeAllIncomingHeader(config, req);
+  removeAllIncomingAuthHeaders(config, req);
 
   // Map the JWT claims to headers
   const headers = jwtService.mapClaims(claims);
@@ -92,12 +95,72 @@ async function requestProcessor(
 }
 
 /**
+ * Validate the auth header against the secret
+ *
+ * @param token 
+ * @param config 
+ * @returns 
+ */
+export function secretValidation(token: string, config: ConfigData): IJwtClaim | undefined {
+  const secretToken = config.proxy.secretToken;
+  if (token && secretToken && token === secretToken) {
+    // Seconds from Epoch
+    const now = Math.floor(Date.now() / 1000);
+
+    // Return a JWT Claim for the secret
+    return {
+      iss: config.jwt.issuer,
+      aud: config.jwt.audience,
+      sub: DEFAULT_SUB_FOR_SECRET_AUTH,
+      email: `${DEFAULT_SUB_FOR_SECRET_AUTH}@farport.co`,
+      iat: now,
+      exp: now + 3600, // Expires in 1 hour
+    };
+  } else {
+    return undefined;
+  }
+}
+
+export async function validateAuthentication(
+  req: http.IncomingMessage,
+  config: ConfigData,
+  jwtService: JwtService
+): Promise<IJwtClaim> {
+  const token = req.headers['authorization']?.split(' ')[1];
+
+  // Make sure that token exists and is not empty
+  if (token === undefined || token.length === 0) {
+    throw new UnauthorizedError('Missing authorization token');
+  }
+
+  // Validate the token against the secret if configured
+  let claims = secretValidation(token, config);
+  if (claims) {
+    logger.info('Request authenticated using secret token');
+    return claims;
+  }
+
+  // Perform JWT validation
+  try {
+    const claims = await jwtService.validateToken(token);
+    return claims;
+  } catch (err) {
+    // Throw an unauthorized error
+    const error = createError('Failed to validate JWT:', {
+      cause: err,
+      type: UnauthorizedError,
+    });
+    throw error;
+  }
+}
+
+/**
  * Remove all incoming headers with the configured prefix
  *
  * @param config
  * @param req
  */
-export function removeAllIncomingHeader(
+export function removeAllIncomingAuthHeaders(
   config: ConfigData,
   req: http.IncomingMessage,
 ): void {
@@ -177,5 +240,5 @@ export function errorHandler(error: unknown, res: http.ServerResponse) {
   }
 
   res.writeHead(status, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ success: false, error: errorName, message }));
+  res.end(JSON.stringify({ error: errorName, message }));
 }

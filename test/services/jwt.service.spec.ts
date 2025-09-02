@@ -20,6 +20,7 @@ const createJwtConfig = (overrides: Partial<JwtConfig> = {}): JwtConfig => ({
 
 const idTokenJwtConfig: JwtConfig = {
   issuer: 'https://accounts.google.com',
+  audience: '32555940559.apps.googleusercontent.com',
   authHeaderPrefix: 'X-AUTH-',
   filter: {},
   mapper: {},
@@ -183,9 +184,11 @@ describe('JwtService', () => {
 
     it('validate Google identity token', async () => {
       const service = new JwtService(idTokenJwtConfig);
+
       // Required that google cloud project is configured and authenticated
       // with `gcloud auth application-default login`
       const jwt = await execShell('gcloud auth print-identity-token');
+      // console.log('Using identity token:', jwt);
       const claims = await service.validateToken(jwt);
       expect(claims).toBeDefined();
       expect(claims.email).toBeDefined();

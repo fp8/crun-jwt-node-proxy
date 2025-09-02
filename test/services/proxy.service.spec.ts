@@ -209,7 +209,6 @@ describe('Proxy Base URL Rewriting', () => {
       });
       expect(mockResponse.end).toHaveBeenCalledWith(
         JSON.stringify({
-          success: false,
           error: 'BadRequestError',
           message:
             'Request URL /different/path/123 does not match proxy base URL /api/candidates',
