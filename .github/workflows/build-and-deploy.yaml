@@ -34,13 +34,16 @@ jobs:
         cache: 'yarn'
     
     - name: Install dependencies
-      run: yarn install --frozen-lockfile
+      run: yarn install
 
     - name: Build TypeScript
       run: yarn build:ts
 
     - name: Keep only prod dependencies
       run: yarn workspaces focus --production
+
+    - name: Check the output
+      run: ls -l
 
   build-docker:
     runs-on: ubuntu-latest
