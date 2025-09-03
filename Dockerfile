@@ -7,7 +7,8 @@ LABEL version=$version
 LABEL git_commit=$git_commit
 LABEL org.opencontainers.image.authors="marcos.lin@farport.co"
 
-RUN mkdir -p /proj/app
+RUN mkdir -p /proj/app \
+    && mkdir -p /proj/app/node_modules
 
 COPY ./dist /proj/app/
 COPY ./etc/config.yaml /proj/etc/config.yaml
