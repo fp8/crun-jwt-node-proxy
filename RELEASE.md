@@ -1,9 +1,8 @@
 # Cloud Run Proxy for JWT authentication
 
-## 0.5.0 [2025-09-01]
+## 0.5.0 [2025-09-03]
 
-* Added support for `BEAR_TOKEN_SECRET`
-
+* Added support for `config.proxy.secretToken`.  The default `config.yaml` allow for use of `PROXY_SECRET_TOKEN` env
 
 ## 0.4.0 [2025-07-14]
 
