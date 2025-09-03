@@ -1,23 +1,3 @@
-FROM farport/node-builder:22.16.0-alpine AS builder
-
-RUN mkdir -p /proj/src
-
-ADD ./.yarnrc.yml /proj/
-ADD ./Dockerfile /proj/
-ADD ./etc/config.yaml /proj/etc/config.yaml
-ADD ./etc/logger.json /proj/etc/logger.json
-ADD ./package.json /proj/
-ADD ./src /proj/src/
-ADD ./tsconfig.build.json /proj/
-ADD ./tsconfig.json /proj/
-ADD ./yarn.lock /proj/
-
-WORKDIR /proj
-
-RUN yarn install
-RUN yarn build:ts
-RUN yarn workspaces focus --production
-
 FROM node:22.16-alpine3.22
 
 ARG version
@@ -29,10 +9,11 @@ LABEL org.opencontainers.image.authors="marcos.lin@farport.co"
 
 RUN mkdir -p /proj/app
 
-COPY --from=builder /proj/dist /proj/app/
-COPY --from=builder /proj/etc /proj/etc/
-COPY --from=builder /proj/node_modules /proj/node_modules/
-COPY --from=builder /proj/package.json /proj/
+COPY ./dist /proj/app/
+COPY ./etc/config.yaml /proj/etc/config.yaml
+COPY ./etc/logger.json /proj/etc/logger.json
+COPY ./node_modules /proj/node_modules/
+COPY ./package.json /proj/
 
 WORKDIR /proj
 

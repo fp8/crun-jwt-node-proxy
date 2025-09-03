@@ -59,7 +59,11 @@ async function requestProcessor(
   jwtService: JwtService,
 ) {
   // Make sure that request authorization header can be authenticated
-  const claims = await authenticaJwtOrSecretFromAuthorizationHeader(req, config, jwtService);
+  const claims = await authenticaJwtOrSecretFromAuthorizationHeader(
+    req,
+    config,
+    jwtService,
+  );
 
   // Remove all incoming headers with the configured prefix
   removeAllIncomingAuthHeaders(config, req);
@@ -82,7 +86,7 @@ async function requestProcessor(
 
 /**
  * PRIVATE - export for testing purposes only
- * 
+ *
  * Validate the secret token and used only by
  * authenticaJwtOrSecretFromAuthorizationHeader function
  *
@@ -149,7 +153,7 @@ export async function authenticaJwtOrSecretFromAuthorizationHeader(
     let error: Error | undefined = undefined;
     if (err instanceof Error) {
       if (err.message.startsWith('JWT validation failed:')) {
-        error = createError(err, { type: UnauthorizedError});
+        error = createError(err, { type: UnauthorizedError });
       }
     }
     if (error === undefined) {

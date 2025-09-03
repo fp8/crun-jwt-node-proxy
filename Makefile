@@ -1,6 +1,6 @@
 GCP_PROJECT      := $(shell gcloud config list --format="value(core.project)")
 
-IMAGE_PREFIX     := europe-west1-docker.pkg.dev/$(GCP_PROJECT)/docker
+IMAGE_PREFIX     := farport
 IMAGE_BASE       := crun-jwt-node-proxy
 IMAGE_VERSION    := $(shell node scripts/packageInfo.js)
 IMAGE_NAME       := $(IMAGE_PREFIX)/$(IMAGE_BASE):$(IMAGE_VERSION)
