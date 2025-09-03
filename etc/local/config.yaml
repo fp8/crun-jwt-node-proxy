@@ -4,6 +4,7 @@ proxy:
   url: https://request-echo-839315814860.europe-west1.run.app
   proxyBaseUrl: /api
   certPath: ./certs/client-identity.p12
+  secretToken: Cc0UxRJyN0.VUsqfWJCww.hWKGU6Z4py.Fh8lxFsoZe
 jwt:
   issuer: https://securetoken.google.com/{{ENV.GOOGLE_CLOUD_PROJECT}}
   audience: "{{ENV.GOOGLE_CLOUD_PROJECT}}"

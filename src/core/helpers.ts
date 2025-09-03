@@ -4,7 +4,11 @@ import { jwtDecode } from 'jwt-decode';
 import { isEmpty } from 'jlog-facade';
 
 import { createLogger } from './logger';
+import { createError } from './excepts';
 import { IJwtClaim } from './interfaces';
+
+// Re-export createError for backward compatibility
+export { createError };
 
 const logger = createLogger();
 
@@ -25,34 +29,6 @@ export function getShortenedString(input: string, length = 10): string {
   const start = input.slice(0, length);
   const end = input.slice(-length);
   return `${start}...${end}`;
-}
-
-/**
- * Designed to be used when an Error is caught.  JS allow you to throw anything so
- * the error caught might not be an instance of error.  Optionally allow you to send
- * a custom error message.
- *
- * @param error
- * @returns
- */
-export function createError(message: string | unknown, error?: unknown): Error {
-  if (typeof message === 'string') {
-    // Error message provided
-    if (error === undefined) {
-      // This branch shouldn't really be used by the caller.  It works but make no sense
-      return new Error(message);
-    } else {
-      // Throw error using message provided and add original error as cause
-      return new Error(message, { cause: error });
-    }
-  } else {
-    // Is message is not a string, ignore the error param
-    if (message instanceof Error) {
-      return message;
-    } else {
-      return new Error(`Unknown error ${message}`);
-    }
-  }
 }
 
 /**

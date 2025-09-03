@@ -2,7 +2,7 @@ import '../testlib';
 
 import { ConfigStore } from '@fp8/simple-config';
 import { createConfigStore } from '../../src/core/config';
-import { ConfigData, JwtConfig } from '../../src/dto/config.dto';
+import { ConfigData, JwtConfig, ProxyConfig } from '../../src/dto/config.dto';
 
 describe('createConfigStore', () => {
   let configStore: ConfigStore<ConfigData>;
@@ -21,12 +21,16 @@ describe('createConfigStore', () => {
 
     const configData = configStore.data;
     expect(configData).toBeInstanceOf(ConfigData);
+    // The name is sourced from the etc/utest/config.json file
+    expect(configData.name).toEqual('crun-jwt-node-proxy-utest');
 
     const jwtConfig = configData.jwt;
     expect(jwtConfig).toBeInstanceOf(JwtConfig);
+    expect(jwtConfig.authHeaderPrefix).toBe('X-AUTH-');
 
-    // The name is sourced from the etc/utest/config.json file
-    expect(configData.name).toEqual('crun-jwt-node-proxy-utest');
+    const proxyConfig = configData.proxy;
+    expect(proxyConfig).toBeInstanceOf(ProxyConfig);
+    expect(proxyConfig.secretToken).toBe('Cc0UxRJyN0');
   });
 
   it('jwt filter', () => {

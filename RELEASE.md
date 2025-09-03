@@ -1,4 +1,9 @@
-# Typescript Starter Project Release Note
+# Cloud Run Proxy for JWT authentication
+
+## 0.5.0 [2025-09-01]
+
+* Added support for `BEAR_TOKEN_SECRET`
+
 
 ## 0.4.0 [2025-07-14]
 

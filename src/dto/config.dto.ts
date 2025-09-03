@@ -25,7 +25,7 @@ export class JwtConfig {
 
   @IsOptional()
   @IsString()
-  audience?: string | undefined;
+  audience!: string;
 
   @IsString()
   @IsNotEmpty()
@@ -62,6 +62,10 @@ export class ProxyConfig {
   @IsOptional()
   @IsString()
   passphrase?: string;
+
+  @IsOptional()
+  @IsString()
+  secretToken?: string;
 }
 
 export class ConfigData {

@@ -20,6 +20,7 @@ const createJwtConfig = (overrides: Partial<JwtConfig> = {}): JwtConfig => ({
 
 const idTokenJwtConfig: JwtConfig = {
   issuer: 'https://accounts.google.com',
+  audience: '32555940559.apps.googleusercontent.com',
   authHeaderPrefix: 'X-AUTH-',
   filter: {},
   mapper: {},
@@ -183,9 +184,11 @@ describe('JwtService', () => {
 
     it('validate Google identity token', async () => {
       const service = new JwtService(idTokenJwtConfig);
+
       // Required that google cloud project is configured and authenticated
       // with `gcloud auth application-default login`
       const jwt = await execShell('gcloud auth print-identity-token');
+      // console.log('Using identity token:', jwt);
       const claims = await service.validateToken(jwt);
       expect(claims).toBeDefined();
       expect(claims.email).toBeDefined();
@@ -200,9 +203,15 @@ describe('JwtService', () => {
       );
 
       const jwt = loadTextFile('jwt/jwt-iam.txt');
+      const publicKey = getPublicKey(
+        'jwt/jwt-iam-jwks.json',
+        '8e8fc8e556f7a76d08d35829d6f90ae2e12cfd0d',
+      );
+
       // Using signature-only validation since the token is expired
       const claims = await iamJwtService.validateToken(jwt, {
         signatureOnly: true,
+        publicKey,
       });
       expect(claims).toBeDefined();
       expect(claims.sub).toBe('114789851119851077143');

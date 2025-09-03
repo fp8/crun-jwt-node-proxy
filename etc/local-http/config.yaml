@@ -2,6 +2,7 @@ name: crun-jwt-node-proxy-local
 port: 8888
 proxy:
   url: http://localhost:8080
+  secretToken: Cc0UxRJyN0.VUsqfWJCww.hWKGU6Z4py.Fh8lxFsoZe
 jwt:
   issuer: https://securetoken.google.com/{{ENV.GOOGLE_CLOUD_PROJECT}}
   audience: "{{ENV.GOOGLE_CLOUD_PROJECT}}"
