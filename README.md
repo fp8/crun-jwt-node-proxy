@@ -1,4 +1,8 @@
-# crun-jwt-node-proxy
+# DEPRICATED.  Use [lite-auth-proxy](https://github.com/fp8/lite-auth-proxy) instead
+
+---
+
+## crun-jwt-node-proxy
 
 This project creates a docker image that is to be deployed as a sidecar in a Google
 Cloud Run service to validate Firebase Auth JWT.  The validation is project id specific
